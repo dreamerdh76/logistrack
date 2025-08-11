@@ -1,0 +1,28 @@
+
+ARG PHP_VERSION=8.3
+
+FROM composer:2 AS build
+WORKDIR /app
+
+COPY composer.json composer.lock symfony.lock ./
+RUN composer install --no-dev --no-scripts --prefer-dist --no-interaction --no-progress
+
+COPY . .
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress \
+ && composer dump-autoload --optimize
+
+FROM php:${PHP_VERSION}-cli-alpine AS runtime
+WORKDIR /app
+
+RUN apk add --no-cache bash tini
+
+COPY --from=build /app /app
+
+RUN addgroup -S app && adduser -S -G app app \
+ && mkdir -p var && chown -R app:app var
+USER app
+
+ENV APP_ENV=prod
+
+ENTRYPOINT ["/sbin/tini","--"]
+CMD ["php","bin/console","list"]

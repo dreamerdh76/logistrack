@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server","--save","", "--appendonly","no"]
+    ports: ["6379:6379"]
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: distribucion
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    ports: ["5432:5432"]
+
+  # API de lectura (Django)
+  ms-api:
+    build:
+      context: ./ms_distribucion
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: ms_distribucion.settings
+      DATABASE_URL: postgres://app:app@db:5432/distribucion
+      REDIS_DSN: redis://redis:6379
+      LOGISTRACK_CONTRACTS_DIR: /contracts
+      # CORS si lo necesitas para Angular
+      # CORS_ALLOWED_ORIGINS: http://localhost:4200
+    volumes:
+      - ./ms_distribucion:/app
+      - ./logistrack-contracts:/contracts:ro
+    depends_on: [db, redis]
+    ports: ["8000:8000"]
+    command: python manage.py runserver 0.0.0.0:8000
+
+  # Worker de consumo de eventos (Redis Streams)
+  ms-worker:
+    build:
+      context: ./ms_distribucion
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: ms_distribucion.settings
+      DATABASE_URL: postgres://app:app@db:5432/distribucion
+      REDIS_DSN: redis://redis:6379
+      LOGISTRACK_CONTRACTS_DIR: /contracts
+    volumes:
+      - ./ms_distribucion:/app
+      - ./logistrack-contracts:/contracts:ro
+    depends_on: [db, redis]
+    command: python manage.py consume_distribucion
+
+  # Productor (Symfony con Predis)
+  symfony:
+    build:
+      context: ./symfony-backend
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: prod
+      REDIS_DSN: tcp://redis:6379
+      REDIS_PREFIX: logistrack:dev
+      REDIS_STREAM: distribucion.bloques
+      DLQ_STREAM: dlq.distribucion.bloques
+      SOURCE_URI: symfony://distribucion
+      # Puedes dejar el dataschema HTTP; el consumer resolverá local por sufijo
+      CONTRACT_DATA_SCHEMA: https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.0/schema.json
+    volumes:
+      - ./symfony-backend:/app
+      - ./logistrack-contracts:/contracts:ro
+    depends_on: [redis]
+    # para publicar manualmente usaremos `docker compose run`
+
+volumes:
+  pgdata: {}
+

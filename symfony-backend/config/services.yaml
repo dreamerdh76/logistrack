@@ -1,0 +1,23 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  Predis\Client:
+    factory: ['App\Infrastructure\Messaging\Redis\PredisFactory', 'fromDsn']
+    arguments:
+      - '%env(REDIS_DSN)%'
+
+  App\Infrastructure\Messaging\Redis\RedisEventPublisher:
+    arguments:
+      - '@Predis\Client'
+      - '%env(REDIS_STREAM)%'
+      - '%env(DLQ_STREAM)%'
+
+  App\Application\Ports\Messaging\EventPublisher: '@App\Infrastructure\Messaging\Redis\RedisEventPublisher'
+
+  App\Command\PublishBloqueCommand:
+    tags: ['console.command']
+
+  App\Command\SeedEventsCommand:
+    tags: ['console.command']

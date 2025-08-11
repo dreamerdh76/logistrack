@@ -1,0 +1,65 @@
+{
+  "specversion": "1.0",
+  "type": "logistrack.distribucion.BloqueConsolidadoListo.v1",
+  "source": "symfony://distribucion",
+  "id": "7a9c9e7e-8f3a-4e77-9c11-4f1d1a0d5b55",
+  "time": "2025-08-01T10:00:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.0/schema.json",
+  "subject": "bloque:b-1001",
+  "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "data": {
+    "bloque_id": "b-1001",
+    "fecha_despacho": "2025-08-01T10:00:00Z",
+    "chofer": {
+      "id": "c-10",
+      "nombre": "María López"
+    },
+    "ordenes": [
+      {
+        "id": "o-1",
+        "pyme_id": "p-1",
+        "origen_cd_id": "cd-hab",
+        "destino_cd_id": "cd-scl",
+        "peso_total": 12.5,
+        "volumen_total": 0.45,
+        "productos": [
+          {
+            "sku": "SKU-001",
+            "qty": 2,
+            "peso": 5.0,
+            "volumen": 0.2
+          },
+          {
+            "sku": "SKU-002",
+            "qty": 1,
+            "peso": 2.5,
+            "volumen": 0.05
+          }
+        ]
+      },
+      {
+        "id": "o-2",
+        "pyme_id": "p-2",
+        "origen_cd_id": "cd-hab",
+        "destino_cd_id": "cd-scl",
+        "peso_total": 8.0,
+        "volumen_total": 0.3,
+        "productos": [
+          {
+            "sku": "SKU-003",
+            "qty": 3,
+            "peso": 3.0,
+            "volumen": 0.15
+          },
+          {
+            "sku": "SKU-004",
+            "qty": 2,
+            "peso": 5.0,
+            "volumen": 0.15
+          }
+        ]
+      }
+    ]
+  }
+}

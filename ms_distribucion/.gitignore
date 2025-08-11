@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Entornos/gestores
+.venv/
+.env
+.env.*
+!.env.example
+!.env.local.example
+.venv*/
+.python-version
+.direnv/
+.envrc
+
+# Paquetes/artefactos
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+static_collected/
+media/*
+!media/.gitkeep
+
+# Logs y runtime
+*.log
+logs/
+var/
+celerybeat-schedule
+celerybeat.pid
+
+# Tests y cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# Tipado/linting
+.mypy_cache/
+.pytype/
+.ruff_cache/
+
+# IDE/OS
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Docker/Compose (variables locales)
+docker-compose.override.yml
+*.local.yml
