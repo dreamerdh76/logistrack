@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.2/schema.json",
+  "title": "BloqueConsolidadoListo v1.2 (data)",
+  "type": "object",
+  "required": ["bloque", "ordenes"],
+  "properties": {
+    "bloque": {
+      "type": "object",
+      "required": ["id", "fecha", "chofer"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "fecha": { "type": "string", "format": "date-time" },
+        "chofer": {
+          "type": "object",
+          "required": ["id", "nombre"],
+          "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "nombre": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ordenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Orden" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "PymeRef": {
+      "type": "object",
+      "required": ["id", "nombre"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "nombre": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "CentroDistribucionRef": {
+      "type": "object",
+      "required": ["id", "nombre"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "nombre": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "ProductoRef": {
+      "type": "object",
+      "required": ["sku", "nombre"],
+      "properties": {
+        "sku": { "type": "string", "minLength": 1 },
+        "nombre": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "LineaOrden": {
+      "type": "object",
+      "required": ["producto", "qty", "peso", "volumen"],
+      "properties": {
+        "producto": { "$ref": "#/$defs/ProductoRef" },
+        "qty": { "type": "integer", "minimum": 1 },
+        "peso": { "type": "number", "minimum": 0 },
+        "volumen": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "Orden": {
+      "type": "object",
+      "required": [
+        "id",
+        "pyme",
+        "origen_cd",
+        "destino_cd",
+        "fecha_despacho",
+        "estado_preparacion",
+        "productos"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "pyme": { "$ref": "#/$defs/PymeRef" },
+        "origen_cd": { "$ref": "#/$defs/CentroDistribucionRef" },
+        "destino_cd": { "$ref": "#/$defs/CentroDistribucionRef" },
+        "fecha_despacho": { "type": "string", "format": "date-time" },
+        "estado_preparacion": { "type": "string", "enum": ["PEN", "COM"] },
+        "peso_total": { "type": "number", "minimum": 0 },
+        "volumen_total": { "type": "number", "minimum": 0 },
+        "productos": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/LineaOrden" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,22 +1,46 @@
+# distribucion/contracts/loader.py
+from __future__ import annotations
 from pathlib import Path
-from functools import lru_cache
-import json
-from django.conf import settings
+from typing import Dict, Any, Iterable
+import json, os
 
-CONTRACTS_DIR = Path(settings.LOGISTRACK_CONTRACTS_DIR)
+CONTRACT_PREFIX = "https://contracts.logistrack/schemas/"
 
-@lru_cache(maxsize=32)
-def load_schema_by_uri(uri: str) -> dict:
+# 1) carpeta interna del app (fallback)
+APP_SCHEMAS = Path(__file__).resolve().parent / "schemas"
 
-    schema_root = CONTRACTS_DIR / "schemas" / "BloqueConsolidadoListo" / "1.0"
+# 2) repo externo hermano: <root>/logistrack-contracts/schemas (fallback)
+ROOT = Path(__file__).resolve().parents[3]  # .../ms_distribucion/distribucion/contracts/loader.py
+EXT_SCHEMAS = ROOT / "logistrack-contracts" / "schemas"
 
-    if uri.endswith("BloqueConsolidadoListo/1.0/schema.json"):
-        return json.loads((schema_root / "schema.json").read_text(encoding="utf-8"))
+# 3) override por variable de entorno (preferida)
+ENV_SCHEMAS = Path(os.environ["CONTRACTS_DIR"]) if os.environ.get("CONTRACTS_DIR") else None
 
-    if uri.endswith("BloqueConsolidadoListo/1.0/cloudevent.json"):
-        return json.loads((schema_root / "cloudevent.json").read_text(encoding="utf-8"))
+def _uri_to_relpath(uri: str) -> str:
+    """
+    Convierte:
+      https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.2/schema.json
+    en:
+      BloqueConsolidadoListo/1.2/schema.json
+    """
+    if not uri.startswith(CONTRACT_PREFIX):
+        raise FileNotFoundError(f"URI fuera de prefijo: {uri}")
+    return uri[len(CONTRACT_PREFIX):]
 
-    if uri.startswith("file://"):
-        return json.loads(Path(uri[7:]).read_text(encoding="utf-8"))
+def _bases() -> Iterable[Path]:
+    # Orden de búsqueda: env → repo externo → carpeta interna
+    if ENV_SCHEMAS:
+        yield ENV_SCHEMAS
+    yield EXT_SCHEMAS
+    yield APP_SCHEMAS
 
-    raise FileNotFoundError(f"No se reconoce el schema: {uri}")
+def load_schema_by_uri(uri: str) -> Dict[str, Any]:
+    rel = _uri_to_relpath(uri)
+    tried = []
+    for base in _bases():
+        path = base / rel
+        tried.append(str(path))
+        if path.is_file():
+            with path.open("r", encoding="utf-8") as f:
+                return json.load(f)
+    raise FileNotFoundError(f"No se reconoce el schema: {uri} | tried={tried}")

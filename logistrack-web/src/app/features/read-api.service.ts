@@ -42,10 +42,8 @@ export class ReadApi {
   // --- endpoints ---
 
   despacho(q: {
-    cd_id?: string;
+    cd?: string;
     pyme_id?: string;
-    desde?: string;
-    hasta?: string;
     page?: number;
   }): Observable<Page<Orden>> {
     return this.getCached<Page<Orden>>('/despacho/ordenes', q);

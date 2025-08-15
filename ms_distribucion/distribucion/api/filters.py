@@ -10,13 +10,21 @@ class RangoFechaMixin:
 
 # Despacho
 class DespachoOrdenFilter(RangoFechaMixin, df.FilterSet):
-    cd_id = df.CharFilter(method="by_cd")          # origen o destino
+    cd = df.CharFilter(method="by_cd_name")          # origen o destino
     pyme_id = df.CharFilter(field_name="pyme_id", lookup_expr="exact")
     class Meta:
         model = Orden
-        fields = ("cd_id","pyme_id")
-    def by_cd(self, qs, name, value):
-       return qs.filter(Q(origen_cd_id=value) | Q(destino_cd_id=value))
+        fields = ("cd","pyme_id")
+    def by_cd_name(self, qs, name, value: str):
+        """
+        Busca por nombre (parcial, case-insensitive) en origen o destino.
+        Soporta múltiple entrada separada por comas: ?cd=Quito,Guayaquil
+        """
+        terms = [t.strip() for t in value.split(",") if t.strip()]
+        cond = Q()
+        for t in terms:
+            cond |= Q(origen_cd__nombre__icontains=t) | Q(destino_cd__nombre__icontains=t)
+        return qs.filter(cond).distinct()
 
 # Preparación
 class PreparacionOrdenFilter(RangoFechaMixin, df.FilterSet):
@@ -52,9 +60,10 @@ class BloqueFilter(df.FilterSet):
     fecha = df.DateFilter(method="por_dia")
     chofer_id = df.CharFilter(field_name="chofer_id", lookup_expr="exact")
     estado = df.CharFilter(field_name="estado_completitud", lookup_expr="exact")
+    chofer_nombre = df.CharFilter(field_name="chofer_nombre", lookup_expr="icontains")
     class Meta:
         model = Bloque
-        fields = ("fecha","chofer_id","estado")
+        fields = ("fecha","chofer_id","estado","chofer_nombre")
     def por_dia(self, qs, name, value):
         start = datetime.combine(value, datetime.min.time(), tzinfo=timezone.get_current_timezone())
         end   = start + timedelta(days=1)

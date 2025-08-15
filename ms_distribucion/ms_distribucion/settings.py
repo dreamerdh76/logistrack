@@ -12,9 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env") 
 LOGISTRACK_CONTRACTS_DIR = os.getenv(
     "LOGISTRACK_CONTRACTS_DIR",
     str(BASE_DIR.parent / "logistrack-contracts") 
@@ -162,7 +163,7 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
+    "PAGE_SIZE": 5,
 }
 
 SPECTACULAR_SETTINGS = {

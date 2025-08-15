@@ -24,17 +24,14 @@ export class DespachoPage {
   private router = inject(Router);
   private api = inject(ReadApi);
 
-  readonly ROWS = 10; // el tamaño de página que prefieras
+  readonly ROWS = 10;
 
-  // filtros
+  // ✅ solo cd + pyme_id
   fields: FilterField[] = [
-    { type: 'text', name: 'cd_id',   label: 'CD (origen/destino)' },
+    { type: 'text', name: 'cd',      label: 'CD (origen/destino)' },
     { type: 'text', name: 'pyme_id', label: 'PyME' },
-    { type: 'date', name: 'desde',   label: 'Desde (YYYY-MM-DD)' },
-    { type: 'date', name: 'hasta',   label: 'Hasta (YYYY-MM-DD)' },
   ];
 
-  // columnas de la tabla (solo 4)
   columns: TableColumn<Orden>[] = [
     { key: 'id',            header: 'Orden'   },
     { key: 'origen_cd_id',  header: 'Origen'  },
@@ -46,23 +43,21 @@ export class DespachoPage {
     },
   ];
 
-  // view-model desde query params
+  // ✅ query params sin fechas
   vm$ = this.route.queryParamMap.pipe(
     map((q) => ({
-      cd_id: q.get('cd_id') || '',
+      cd: q.get('cd') || '',
       pyme_id: q.get('pyme_id') || '',
-      desde: q.get('desde') || '',
-      hasta: q.get('hasta') || '',
       page: Number(q.get('page') || 1),
       ordering: q.get('ordering') || '-fecha_despacho',
     })),
     switchMap((q) =>
       this.api.despacho({
-        cd_id: q.cd_id || undefined,
+        cd: q.cd || undefined,
         pyme_id: q.pyme_id || undefined,
-        desde: q.desde || undefined,
-        hasta: q.hasta || undefined,
         page: q.page,
+        // si tu API soporta ordering, pásalo aquí
+        // ordering: q.ordering,
       }).pipe(
         map((p: P<Orden>) => ({ q, data: p.results, count: p.count, loading: false, error: null })),
         startWith({ q, data: [] as Orden[], count: 0, loading: true, error: null }),
@@ -71,20 +66,27 @@ export class DespachoPage {
     ),
   );
 
-  // navegación / eventos
-  onFilters(v: Record<string, any>) { this.navigate({ ...v, page: 1 }); }
-  onCleared() {
-    this.navigate({ cd_id: null, pyme_id: null, desde: null, hasta: null, page: 1 });
+  onFilters(v: Record<string, any>) {
+    // ✅ removemos posibles residuos de 'desde'/'hasta' del URL
+    this.navigate({ ...v, page: 1, desde: null, hasta: null });
   }
-  // ⚠️ nuestro TableComponent emite { pageIndex, pageSize, length }
+
+  onCleared() {
+    // ✅ limpiar todo excepto paginación
+    this.navigate({ cd: null, pyme_id: null, page: 1, desde: null, hasta: null });
+  }
+
   onPage(e: { pageIndex: number; pageSize: number; length: number }, q: any) {
-    this.navigate({ ...q, page: e.pageIndex + 1 });
+    this.navigate({ ...q, page: e.pageIndex + 1, desde: null, hasta: null });
   }
 
   private navigate(params: any) {
-    this.router.navigate([], { relativeTo: this.route, queryParams: params, queryParamsHandling: 'merge' });
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { ...params, desde: null, hasta: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
-  // helper para calcular el offset de PrimeNG
   firstOf(page?: number) { const p = Number(page) || 1; return Math.max(0, (p - 1) * this.ROWS); }
 }
