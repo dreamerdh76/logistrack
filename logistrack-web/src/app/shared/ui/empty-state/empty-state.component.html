@@ -1,0 +1,18 @@
+<div
+  class="p-6 text-center opacity-70 space-y-3"
+  role="status"
+  aria-live="polite"
+>
+  <h3 class="m-0 text-lg font-semibold">{{ title }}</h3>
+  <p class="m-0 text-sm text-gray-600">{{ subtitle }}</p>
+
+  <button
+    *ngIf="actionLabel"
+    mat-stroked-button
+    type="button"
+    (click)="action.emit()"
+    class="inline-flex items-center gap-2"
+  >
+    {{ actionLabel }}
+  </button>
+</div>

@@ -1,0 +1,110 @@
+:host { display: block; }
+
+/* ===== DESKTOP (>=769px) ===== */
+@media (min-width: 769px) {
+  .pro-table .p-datatable .p-datatable-table { table-layout: fixed; width: 100%; }
+
+  .pro-table .p-datatable th,
+  .pro-table .p-datatable td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: .5rem .75rem;
+  }
+
+  /* 1) Quitar totalmente el zebrado */
+  .pro-table .p-datatable-tbody > tr:nth-child(odd),
+  .pro-table .p-datatable-tbody > tr:nth-child(even) {
+    background: transparent !important;
+  }
+
+  /* 2) Hover uniforme para TODAS las filas */
+  .pro-table .p-datatable-tbody > tr {
+    transition: background-color .15s ease;
+  }
+  .pro-table .p-datatable-tbody > tr:hover {
+    background: var(--surface-hover, rgba(0,0,0,.04)) !important;
+  }
+
+  /* Mantén el seleccionado sobre el hover (opcional) */
+  .pro-table .p-datatable-tbody > tr.p-highlight:hover {
+    background: var(--highlight-bg, #e6f4ff) !important;
+  }
+
+  /* Oculta títulos embebidos en desktop */
+  .pro-table .p-datatable-tbody > tr > td .p-column-title { display: none; }
+}
+
+/* ===== TABLET (769–1280px): compacta órdenes/estado/acciones ===== */
+@media (min-width: 769px) and (max-width: 1280px) {
+  .pro-table .p-datatable thead > tr > th,
+  .pro-table .p-datatable tbody > tr > td {
+    padding-block: .35rem;
+    padding-inline: .50rem;
+  }
+
+  /* tokens de columna (aplícalos vía headerClass/bodyClass en tus columnas) */
+  .pro-table .p-datatable :is(th,td).col-orders  { width: 3.25rem; text-align: right; font-size: .875rem; }
+  .pro-table .p-datatable :is(th,td).col-status  { width: 3.5rem;  white-space: nowrap; font-size: .875rem; }
+  .pro-table .p-datatable :is(th,td).col-actions { width: 2.75rem; text-align: right; }
+
+  .pro-table .p-datatable td.col-orders {
+    font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1;
+  }
+
+  .pro-table .col-actions .p-button { min-width: 0; padding: 0 .25rem; }
+  .pro-table .col-actions .p-button .p-button-icon { font-size: .875rem; }
+}
+
+/* ===== MÓVIL (<=768px): stack (igual que ya tienes) ===== */
+@media (max-width: 768px) {
+  .pro-table .p-datatable-thead { display: none !important; }
+  .pro-table .p-datatable .p-datatable-table-container { overflow-x: clip !important; }
+
+  .pro-table .p-datatable-tbody > tr {
+    display: block;
+    margin: .625rem 0;
+    padding: .25rem;
+    background: var(--surface-card, #fff);
+    border: 1px solid var(--surface-border, rgba(0,0,0,.08));
+    border-radius: .75rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+
+  .pro-table .p-datatable-tbody > tr > td {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: .5rem;
+    align-items: center;
+    padding: .375rem .5rem;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .pro-table .p-datatable-tbody > tr > td .p-column-title {
+    display: block;
+    margin: 0;
+    font-size: .8125rem;
+    line-height: 1.1;
+    font-weight: 600;
+    color: rgba(0,0,0,.55);
+  }
+
+  .pro-table .p-datatable-tbody > tr > td > :not(.p-column-title) {
+    font-size: .9375rem;
+    line-height: 1.2;
+  }
+
+  .pro-table .p-datatable-tbody > tr > td:last-child {
+    grid-template-columns: 1fr auto;
+    text-align: right;
+    padding-top: .25rem;
+  }
+  .pro-table .p-datatable-tbody > tr > td:last-child .p-button {
+    border-radius: 9999px;
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: .25rem;
+  }
+}

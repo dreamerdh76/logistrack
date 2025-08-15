@@ -1,0 +1,62 @@
+<div class="relative">
+  <div *ngIf="loading" class="absolute inset-0 grid place-items-center bg-black/5 z-10 rounded-lg">
+    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
+  </div>
+
+  <p-table
+    class="w-full"
+    [value]="value"
+    [paginator]="true"
+    [lazy]="true"
+    [rows]="rows"
+    [first]="first"
+    [totalRecords]="totalRecords"
+    [size]="'large'"
+    [sortField]="sortField || ''"
+    [sortOrder]="sortOrder"
+    [breakpoint]="'768px'"
+    [responsiveLayout]="'stack'"
+    (onPage)="onPrimePage($event)">
+
+    <!-- HEADER -->
+    <ng-template pTemplate="header">
+      <tr>
+        <th *ngFor="let col of columns"
+            [ngClass]="headerClass(col)">
+          {{ col.header }}
+        </th>
+
+        <th *ngIf="showActions" class="text-right col-actions">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <!-- BODY -->
+    <ng-template pTemplate="body" let-row>
+      <tr>
+        <td *ngFor="let col of columns"
+            [ngClass]="colClass(row, col)">
+          <span class="p-column-title">{{ col.header }}</span>
+          {{ cellValue(row, col) }}
+        </td>
+
+        <td *ngIf="showActions" class="text-right col-actions!px-2 !py-0">
+          <span class="p-column-title">Acciones</span>
+
+          <ng-container *ngIf="actionTemplate; else defaultAction"
+                        [ngTemplateOutlet]="actionTemplate"
+                        [ngTemplateOutletContext]="{$implicit: row}">
+          </ng-container>
+
+          <ng-template #defaultAction>
+            <button pButton
+                    icon="pi pi-arrow-right"
+                    class="p-button-text p-button-rounded p-button-sm p-0 sm:px-2"
+                    (click)="rowClick.emit(row)">
+            </button>
+            <span class="hidden sm:inline ml-1">Ver</span>
+          </ng-template>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

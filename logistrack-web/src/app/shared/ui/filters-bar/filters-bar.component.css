@@ -1,0 +1,14 @@
+@media (max-width: 768px) {
+  :host .overlay-mobile {
+    inset-inline: 0 !important; /* left/right RTL-safe */
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: clip;
+  }
+
+  :host input, :host select, :host textarea, :host .p-inputtext {
+    font-size: 16px !important; /* evita zoom móvil */
+  }
+}

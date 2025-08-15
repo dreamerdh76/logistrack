@@ -1,0 +1,88 @@
+<section class="p-4 space-y-4" *ngIf="vm$ | async as vm">
+  <p-button
+    [text]="true"
+    icon="pi pi-arrow-left"
+    label="Volver"
+    [routerLink]="['/consolidacion']">
+  </p-button>
+
+  <ng-container *ngIf="!vm.error && vm.b as b; else errorTpl">
+
+    <!-- Cabecera -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div class="p-3 rounded border bg-white">
+        <div class="text-gray-500 text-xs">Bloque</div>
+        <div class="font-semibold">{{ b.id }}</div>
+      </div>
+      <div class="p-3 rounded border bg-white">
+        <div class="text-gray-500 text-xs">Fecha</div>
+        <div class="font-semibold">{{ b.fecha | date: 'short' }}</div>
+      </div>
+      <div class="p-3 rounded border bg-white">
+        <div class="text-gray-500 text-xs">Chofer</div>
+        <div class="font-semibold">
+          {{ b.chofer_nombre }} ({{ b.chofer_id }})
+        </div>
+      </div>
+      <div class="p-3 rounded border bg-white">
+        <div class="text-gray-500 text-xs">Órdenes</div>
+        <div class="font-semibold">{{ b.total_ordenes }}</div>
+      </div>
+    </div>
+
+    <!-- Loading local (opcional) -->
+    <div *ngIf="vm.loading" class="text-sm text-gray-500">Cargando órdenes…</div>
+
+    <!-- Tabla de órdenes -->
+    <ng-container *ngIf="!vm.loading && b.ordenes?.length; else emptyTpl">
+      <p-table
+        [value]="b.ordenes"
+        [size]="'large'"
+        [paginator]="false"
+        dataKey="id"
+        [rowTrackBy]="rowTrackBy"
+        class="w-full bg-white rounded-2xl overflow-hidden">
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th scope="col">Orden</th>
+            <th scope="col">PyME</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Destino</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Preparación</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-r>
+          <tr>
+            <td class="whitespace-nowrap">{{ r.id }}</td>
+            <td>{{ r.pyme_id }}</td>
+            <td>{{ r.origen_cd_id }}</td>
+            <td>{{ r.destino_cd_id }}</td>
+            <td class="whitespace-nowrap">{{ r.fecha_despacho | date: 'short' }}</td>
+            <td>
+              <!-- Badge tailwind para evitar solapes de tema -->
+              <span
+                class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+                [class]="statusClass(r.estado_preparacion)">
+                {{ r.estado_preparacion }}
+              </span>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #emptyTpl>
+    <app-empty-state title="Sin órdenes en este bloque"></app-empty-state>
+  </ng-template>
+
+  <ng-template #errorTpl>
+    <app-error-state
+      [message]="'No se pudo cargar el bloque.'"
+      (retry)="onRetry()">
+    </app-error-state>
+  </ng-template>
+</section>

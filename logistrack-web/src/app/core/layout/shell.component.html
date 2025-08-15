@@ -1,0 +1,36 @@
+<div class="min-h-svh w-full flex">
+  <!-- Aside fijo en desktop -->
+  <aside class="hidden md:flex w-64  bg-white">
+    <p-panelMenu [model]="items" styleClass="w-full"></p-panelMenu>
+  </aside>
+
+  <!-- Contenido -->
+  <div class="flex-1 flex flex-col">
+    <header class="flex items-center gap-2 px-3 md:px-4 h-14 bg-white text-black">
+      <!-- Botón hamburguesa solo móvil -->
+      <button pButton type="button" icon="pi pi-bars" class="md:hidden" (click)="openDrawer()"></button>
+
+      <span class="inline-flex items-center gap-2 font-semibold">
+        <i class="pi pi-truck"></i> LogisTrack
+      </span>
+      <span class="flex-1"></span>
+    </header>
+
+    <main class="p-4 md:p-6 grow overflow-auto">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <!-- Drawer móvil (overlay) -->
+  <p-drawer
+    [(visible)]="mobileOpen"
+    position="left"
+    [modal]="true"
+    [blockScroll]="true"
+    [baseZIndex]="1100"
+    (onHide)="closeDrawer()"
+    styleClass="!w-64 max-w-[80vw] md:hidden"
+  >
+    <p-panelMenu [model]="items" styleClass="w-full"></p-panelMenu>
+  </p-drawer>
+</div>

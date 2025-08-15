@@ -1,0 +1,86 @@
+<form [formGroup]="form" (ngSubmit)="apply()"  class="w-full space-y-3">
+  <!-- Header -->
+  <div class="flex items-center gap-3  text-sm">
+    <span class="font-semibold text-blue-600">{{ activeCount }} active filters</span>
+    <button type="button"
+            class="text-blue-600 underline cursor-pointer disabled:text-gray-400"
+            (click)="clear()" [disabled]="!hasAny">
+      Clear filters
+    </button>
+  </div>
+
+<!-- De: grid ...  A: flex con wrap -->
+<div class="flex flex-wrap items-end gap-3 md:gap-4">
+  <ng-container *ngFor="let f of fields; trackBy: trackField" [ngSwitch]="f.type">
+
+    <!-- TEXT -->
+    <div *ngSwitchCase="'text'" class="flex-[1_1_220px] min-w-0">
+      <p-floatlabel variant="on" class="w-full">
+        <label class="text-base text-muted-color mb-1">{{ f.label }}</label>
+        <input pInputText class="w-full text-base" [formControlName]="f.name" />
+      </p-floatlabel>
+    </div>
+
+    <!-- SELECT -->
+    <div *ngSwitchCase="'select'" class="flex-[1_1_220px] min-w-0">
+      <p-floatlabel>
+        <label class="text-base text-muted-color mb-1">{{ f.label }}</label>
+        <p-select class="w-full text-base"
+                  [options]="$any(f).options"
+                  optionLabel="label" optionValue="value"
+                  [filter]="true" [showClear]="true"
+                  [autofocusFilter]="false"
+                  [autoOptionFocus]="false"
+                  [placeholder]="$any(f).placeholder ?? ('All ' + f.label.toLowerCase())"
+                  [formControlName]="f.name"
+                  [appendTo]="'self'"
+                  [panelStyleClass]="'overlay-mobile'"
+                  >
+
+
+        </p-select>
+      </p-floatlabel>
+    </div>
+
+    <!-- DATE -->
+    <div *ngSwitchCase="'date'" class="flex-[1_1_220px] min-w-0">
+      <p-floatlabel variant="on" class="w-full">
+        <p-datepicker class="w-full text-base"
+                      [inputId]="'dp_'+f.name"
+                      [showIcon]="true" iconDisplay="input"
+                      [showButtonBar]="true"
+                      [formControlName]="f.name"
+                      [iconDisplay]="'button'"
+                      [appendTo]="'self'"
+                      [panelStyleClass]="'overlay-mobile'">
+
+        </p-datepicker>
+        <label [for]="'dp_'+f.name">{{ f.label }}</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- BOOLEAN -->
+    <div *ngSwitchCase="'boolean'" class="flex-[1_1_220px] min-w-0">
+      <label class="text-base text-muted-color mb-1">{{ f.label }}</label>
+      <p-select class="w-full text-base"
+                [options]="[{value:'',label:'(Todos)'},{value:true,label:'Sí'},{value:false,label:'No'}]"
+                optionLabel="label"
+                optionValue="value"
+                [showClear]="true"
+                [formControlName]="f.name"
+                [autofocusFilter]="false"
+                [autoOptionFocus]="false"
+                [appendTo]="'self'"
+                [panelStyleClass]="'overlay-mobile'">
+      </p-select>
+    </div>
+
+  </ng-container>
+</div>
+
+  <!-- Acciones -->
+  <div class="flex items-center justify-end gap-2" *ngIf="!autoApply">
+    <p-button type="submit" label="Buscar" icon="pi pi-search"></p-button>
+    <p-button type="button" [text]="true" label="Limpiar" icon="pi pi-times" (onClick)="clear()"></p-button>
+  </div>
+</form>

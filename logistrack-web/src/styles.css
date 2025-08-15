@@ -1,0 +1,26 @@
+/* styles.css — GLOBAL mínimo */
+@import "tailwindcss";
+
+/* Utilidades globales muy ligeras */
+@layer utilities {
+  /* Móvil: sin scroll horizontal de página y sin zoom por foco */
+  @media (max-width: 768px) {
+    main { overflow-x: clip; }
+    input, select, textarea, .p-inputtext { font-size: 16px; }
+  }
+
+  /* Desktop: reserva de gutter para que no salte el layout al aparecer la barra */
+  @media (min-width: 769px) {
+    html { scrollbar-gutter: stable both-edges; }
+  }
+
+  /* Utilidad transversal opcional para números tabulares */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+@plugin "tailwindcss-primeui";
+@import "primeicons/primeicons.css";
+
+

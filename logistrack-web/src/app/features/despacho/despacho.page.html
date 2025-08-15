@@ -1,0 +1,44 @@
+<!-- src/app/features/despacho/despacho.page.html -->
+<section class="py-4 px-4"  *ngIf="vm$ | async as vm">
+  <div class="mx-auto max-w-6xl space-y-4">
+    <h2 class="text-2xl font-semibold">Despacho</h2>
+
+    <!-- Filtros: caja centrada -->
+    <div class="bg-gray-50 rounded-2xl shadow-sm p-4">
+      <app-filters-bar
+        [fields]="fields"
+        [value]="{ cd_id: vm.q.cd_id, pyme_id: vm.q.pyme_id, desde: vm.q.desde, hasta: vm.q.hasta }"
+        [autoApply]="true"
+        (change)="onFilters($event)"
+        (cleared)="onCleared()">
+      </app-filters-bar>
+    </div>
+
+    <!-- Error -->
+    <app-error-state
+      *ngIf="vm.error"
+      [message]="'No se pudo cargar las órdenes.'"
+      (retry)="onFilters(vm.q)">
+    </app-error-state>
+
+    <!-- Empty -->
+    <app-empty-state
+      *ngIf="!vm.error && !vm.loading && vm.count === 0"
+      title="Sin órdenes"
+      subtitle="Ajusta los filtros e inténtalo nuevamente.">
+    </app-empty-state>
+
+    <!-- Tabla: centrada y con contenedor -->
+    <div *ngIf="!vm.error && vm.count > 0" class="bg-white rounded-2xl shadow-sm p-2">
+      <app-table
+        [columns]="columns"
+        [value]="vm.data"
+        [totalRecords]="vm.count"
+        [rows]="ROWS"
+        [first]="firstOf(vm.q.page)"
+        [loading]="vm.loading"
+        (page)="onPage($event, vm.q)">
+      </app-table>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,18 @@
+<div
+  class="p-6 text-center space-y-3 text-red-700 dark:text-red-400"
+  role="alert"
+  aria-live="assertive"
+>
+  <h3 class="m-0 text-lg font-semibold">Ocurrió un error</h3>
+  <p class="m-0 text-sm">{{ message }}</p>
+
+  <button
+    mat-stroked-button
+    color="warn"
+    type="button"
+    (click)="retry.emit()"
+    class="inline-flex items-center gap-2"
+  >
+    {{ retryLabel }}
+  </button>
+</div>
