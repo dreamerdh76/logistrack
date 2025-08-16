@@ -1,0 +1,81 @@
+version: "3.9"
+name: logistrack
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-logistrack}
+      MYSQL_USER: ${MYSQL_USER:-logi}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-logi}
+    ports:
+      - "3306:3306"   # 👈 privado en Codespaces
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -ulogi -plogi || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+
+  redis:
+    image: redis:7.4
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  ms_distribucion:
+    build: ./ms_distribucion
+    container_name: ms_distribucion
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: "dev"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${MYSQL_DATABASE:-logistrack}
+      DB_USER: ${MYSQL_USER:-logi}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-logi}
+      REDIS_DSN: redis://redis:6379/0
+      ALLOWED_HOSTS: "*"
+      CORS_ALLOW_ALL_ORIGINS: "1"
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput || true &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    ports:
+      - "8000:8000"
+
+  symfony_publisher:
+    build: ./symfony-backend
+    container_name: symfony_publisher
+    depends_on:
+      - redis
+    environment:
+      APP_ENV: dev
+      REDIS_DSN: redis://redis:6379
+      REDIS_STREAM: distribucion.bloques
+      REDIS_DLQ_STREAM: dlq.distribucion.bloques
+    command: php -S 0.0.0.0:8080 -t public
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: ./logistrack-web
+      dockerfile: Dockerfile
+    container_name: web
+    depends_on:
+      - ms_distribucion
+    environment:
+      # si usas proxy a /api:
+      API_BASE_URL: "http://ms_distribucion:8000"
+    ports:
+      - "4200:4200"
