@@ -89,9 +89,6 @@ export class ReadApi {
 
   distribucion(q: {
     estado?: EstadoDistrib;
-    chofer_id?: string;
-    desde?: string;
-    hasta?: string;
     page?: number;
   }): Observable<Page<Distribucion>> {
     return this.getCached<Page<Distribucion>>('/distribucion/ordenes', q);

@@ -91,10 +91,6 @@ class BloqueFilter(df.FilterSet):
 
 # Distribución
 class DistribucionFilter(df.FilterSet):
-    estado = df.CharFilter(field_name="estado", lookup_expr="exact")
-    chofer_id = df.CharFilter(field_name="chofer_id", lookup_expr="exact")
-    desde = df.IsoDateTimeFilter(field_name="fecha_entrega", lookup_expr="gte")
-    hasta = df.IsoDateTimeFilter(field_name="fecha_entrega", lookup_expr="lte")
     class Meta:
         model = Distribucion
-        fields = ("estado","chofer_id")
+        fields = ("estado",)

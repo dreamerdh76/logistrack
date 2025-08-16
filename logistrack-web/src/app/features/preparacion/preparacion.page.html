@@ -30,6 +30,8 @@
       [data]="vm.data"
       [loading]="vm.loading"
       [length]="vm.count"
+      [rows]="ROWS"
+      [first]="firstOf(vm.q.page)"
       [pageIndex]="vm.q.page - 1"
       (page)="onPage($event, vm.q)"
     >

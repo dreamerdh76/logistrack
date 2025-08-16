@@ -30,6 +30,7 @@ export class ExpedicionPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(ReadApi);
+  readonly ROWS = 5;
 
   columns: TableColumn<Orden>[] = [
     { key: 'id', header: 'Orden',  cell: r => r.id },
@@ -90,6 +91,11 @@ export class ExpedicionPage {
       queryParams: params,
       queryParamsHandling: 'merge',
     });
+  }
+
+  firstOf(page?: number) {
+    const p = Number(page) || 1;
+    return Math.max(0, (p - 1) * this.ROWS);
   }
 
   trackRow = (_: number, r: Orden) => r.id;

@@ -24,7 +24,7 @@ export class DespachoPage {
   private router = inject(Router);
   private api = inject(ReadApi);
 
-  readonly ROWS = 10;
+  readonly ROWS = 5;
 
   // Filtros visibles
   fields: FilterField[] = [

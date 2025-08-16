@@ -35,6 +35,7 @@ export class PreparacionPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(ReadApi);
+  readonly ROWS = 5;
 
   fields: FilterField[] = [
     {
@@ -131,5 +132,9 @@ export class PreparacionPage {
     });
   }
 
+  firstOf(page?: number) {
+    const p = Number(page) || 1;
+    return Math.max(0, (p - 1) * this.ROWS);
+  }
   trackRow = (_: number, r: Orden) => r.id;
 }

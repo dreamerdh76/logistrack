@@ -35,6 +35,7 @@ export class DistribucionPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(ReadApi);
+  readonly ROWS = 5;
 
   fields: FilterField[] = [
     {
@@ -47,14 +48,9 @@ export class DistribucionPage {
         { value: 'REJ', label: 'Rechazada' },
       ],
     },
-    { type: 'text', name: 'chofer_id', label: 'Chofer' },
-    { type: 'date', name: 'desde', label: 'Desde (YYYY-MM-DD o ISO)' },
-    { type: 'date', name: 'hasta', label: 'Hasta (YYYY-MM-DD o ISO)' },
   ];
 
   columns: TableColumn<Distribucion>[] = [
-    { key: 'orden_id', header: 'Orden' },
-    { key: 'estado', header: 'Estado' },
     {
       key: 'fecha_entrega',
       header: 'Fecha entrega',
@@ -62,14 +58,21 @@ export class DistribucionPage {
         r.fecha_entrega ? new Date(r.fecha_entrega).toLocaleString() : '—',
     },
     { key: 'chofer_id', header: 'Chofer' },
+    { key: 'estado',
+      header: 'Estado' ,
+      cell: r => r.estado_label ?? r.estado,
+    // color por estado
+      bodyClass: (r) =>
+        r.estado === 'ENT' ? 'text-green-600 font-medium' :
+        r.estado === 'REJ' ? 'text-red-600 font-medium'  :
+        /* PEN */           'text-amber-600 font-medium',
+    },
+
   ];
 
   vm$ = this.route.queryParamMap.pipe(
     map((q) => ({
       estado: q.get('estado') || '',
-      chofer_id: q.get('chofer_id') || '',
-      desde: q.get('desde') || '',
-      hasta: q.get('hasta') || '',
       page: Number(q.get('page') || 1),
       ordering: q.get('ordering') || '-fecha_entrega',
     })),
@@ -77,9 +80,6 @@ export class DistribucionPage {
       this.api
         .distribucion({
           estado: (q.estado as any) || undefined,
-          chofer_id: q.chofer_id || undefined,
-          desde: q.desde || undefined,
-          hasta: q.hasta || undefined,
           page: q.page,
         })
         .pipe(
@@ -111,16 +111,17 @@ export class DistribucionPage {
   );
 
   onFilters(v: Record<string, any>) {
-    this.navigate({ ...v, page: 1 });
+    const params: any = { page: 1 }; // resetea a la primera página
+    for (const f of this.fields) {
+      const val = Object.prototype.hasOwnProperty.call(v, f.name) ? v[f.name] : null;
+      params[f.name] = (val === '' || val == null) ? null : val;
+    }
+    this.navigate(params);
   }
+
+  // Limpiar filtros (ojo: chofer_nombre, no chofer_id)
   onCleared() {
-    this.navigate({
-      estado: null,
-      chofer_id: null,
-      desde: null,
-      hasta: null,
-      page: 1,
-    });
+    this.navigate({ fecha: null, chofer_nombre: null, estado: null, page: 1 });
   }
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });
@@ -134,5 +135,9 @@ export class DistribucionPage {
     });
   }
 
+  firstOf(page?: number) {
+    const p = Number(page) || 1;
+    return Math.max(0, (p - 1) * this.ROWS);
+  }
   trackRow = (_: number, r: Distribucion) => r.orden_id;
 }

@@ -35,6 +35,7 @@ export class RecepcionPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(ReadApi);
+  readonly ROWS = 5;
 
   fields: FilterField[] = [
     { type: 'text', name: 'cd', label: 'CD' },
@@ -45,7 +46,12 @@ export class RecepcionPage {
     { key: 'orden_id', header: 'Orden' },
     { key: 'cd', header: 'Centro Distribucion', cell: r => r.cd?.nombre ?? '—' },
     { key: 'usuario_receptor', header: 'Usuario' },
-    { key: 'incidencias', header: 'Incidencias' },
+    { key: 'incidencias',
+      header: 'Incidencias',
+      cell: (r) => r.incidencias ? 'Con incidencias' : 'Sin incidencias',
+      bodyClass: (r) =>
+      r.incidencias ? 'text-red-600 font-medium' : 'text-green-600 font-medium',
+     },
   ];
 
   vm$ = this.route.queryParamMap.pipe(
@@ -118,5 +124,9 @@ export class RecepcionPage {
     });
   }
 
+  firstOf(page?: number) {
+    const p = Number(page) || 1;
+    return Math.max(0, (p - 1) * this.ROWS);
+  }
   trackRow = (_: number, r: Recepcion) => r.orden_id;
 }
