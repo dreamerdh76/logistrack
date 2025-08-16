@@ -1,6 +1,6 @@
 # Modelo de Datos – LogisTrack (Mermaid)
 
-## ERD (erDiagram – compatible con GitHub)
+## ERD (erDiagram)
 ```mermaid
 erDiagram
   PYME {
@@ -120,7 +120,7 @@ erDiagram
 
 ```
 
-## Vista alternativa (classDiagram – fallback)
+## Vista alternativa (classDiagram)
 ```mermaid
 classDiagram
   class Pyme {
