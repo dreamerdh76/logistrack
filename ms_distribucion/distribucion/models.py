@@ -99,8 +99,6 @@ class OrdenProducto(models.Model):
             models.Index(fields=["producto"]),
         ]
 
-    def subtotal(self):
-        return self.qty * self.precio_unitario
     
 # -------- Consolidación (bloques) --------
 class Bolsa(TimeStamped):
