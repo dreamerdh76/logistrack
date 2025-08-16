@@ -45,28 +45,29 @@ export class PreparacionPage {
         { value: 'PEN', label: 'Pendiente' },
         { value: 'COM', label: 'Completa' },
       ],
-    },
-    { type: 'date', name: 'desde', label: 'Desde (YYYY-MM-DD o ISO)' },
-    { type: 'date', name: 'hasta', label: 'Hasta (YYYY-MM-DD o ISO)' },
+
+    }
   ];
 
   columns: TableColumn<Orden>[] = [
     { key: 'id', header: 'Orden' },
-    { key: 'estado_preparacion', header: 'Estado' },
+    { key: 'estado_preparacion',
+      header: 'Estado',
+      template: (r: Orden) => r.estado_preparacion === 'COM' ? 'Completa' : 'Pendiente',
+      bodyClass: (r: Orden) =>(
+          r.estado_preparacion === 'COM'
+            ? 'text-green-600 font-medium'
+            : 'text-red-600 font-medium'
+        ),
+
+     },
     { key: 'peso_total', header: 'Peso' },
     { key: 'volumen_total', header: 'Volumen' },
-    {
-      key: 'fecha_despacho',
-      header: 'Fecha',
-      cell: (r) => new Date(r.fecha_despacho).toLocaleString(),
-    },
   ];
 
   vm$ = this.route.queryParamMap.pipe(
     map((q) => ({
       estado: q.get('estado') || '',
-      desde: q.get('desde') || '',
-      hasta: q.get('hasta') || '',
       page: Number(q.get('page') || 1),
       ordering: q.get('ordering') || '-fecha_despacho',
     })),
@@ -74,8 +75,6 @@ export class PreparacionPage {
       this.api
         .preparacion({
           estado: (q.estado as any) || undefined,
-          desde: q.desde || undefined,
-          hasta: q.hasta || undefined,
           page: q.page,
         })
         .pipe(
@@ -107,10 +106,18 @@ export class PreparacionPage {
   );
 
   onFilters(v: Record<string, any>) {
-    this.navigate({ ...v, page: 1 });
+    const params: any = { page: 1 };
+    for (const f of this.fields) {
+      const has = Object.prototype.hasOwnProperty.call(v, f.name);
+      const val = has ? v[f.name] : null;
+      params[f.name] = (val === '' || val == null) ? null : val;
+    }
+    this.navigate(params);
   }
   onCleared() {
-    this.navigate({ estado: null, desde: null, hasta: null, page: 1 });
+    const params: any = { page: 1 };
+    for (const f of this.fields) params[f.name] = null;
+    this.navigate(params);
   }
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });

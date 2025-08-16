@@ -26,38 +26,38 @@ export class DespachoPage {
 
   readonly ROWS = 10;
 
-  // ✅ solo cd + pyme_id
+  // Filtros visibles
   fields: FilterField[] = [
-    { type: 'text', name: 'cd',      label: 'CD (origen/destino)' },
-    { type: 'text', name: 'pyme_id', label: 'PyME' },
+    { type: 'text', name: 'cd',      label: 'CD1,CD2,CD3,...' },
+    { type: 'text', name: 'pyme', label: 'PyME' },
   ];
 
+  // Columnas (minis anidados)
   columns: TableColumn<Orden>[] = [
-    { key: 'id',            header: 'Orden'   },
-    { key: 'origen_cd_id',  header: 'Origen'  },
-    { key: 'destino_cd_id', header: 'Destino' },
-    {
-      key: 'fecha_despacho',
-      header: 'Fecha',
-      cell: (r) => new Date(r.fecha_despacho).toLocaleString(),
-    },
+    { key: 'id', header: 'Orden',    cell: r => r.id },
+    { key: 'pyme', header: 'PyME',   cell: r => r.pyme?.nombre ?? '—' },
+    { key: 'origen_cd',  header: 'Origen',  cell: r => r.origen_cd?.nombre ?? '—' },
+    { key: 'destino_cd', header: 'Destino', cell: r => r.destino_cd?.nombre ?? '—' },
+    { key: 'fecha_despacho', header: 'Fecha', cell: r => new Date(r.fecha_despacho).toLocaleString() },
   ];
 
-  // ✅ query params sin fechas
+
+  // Estado de la página desde QueryParams
   vm$ = this.route.queryParamMap.pipe(
-    map((q) => ({
-      cd: q.get('cd') || '',
-      pyme_id: q.get('pyme_id') || '',
-      page: Number(q.get('page') || 1),
-      ordering: q.get('ordering') || '-fecha_despacho',
-    })),
+    map((q) => {
+      const raw = Number(q.get('page'));
+      const page = Number.isFinite(raw) && raw > 0 ? raw : 1;
+      return {
+        cd: q.get('cd') || '',
+        pyme: q.get('pyme') || '',
+        page,
+      };
+    }),
     switchMap((q) =>
       this.api.despacho({
         cd: q.cd || undefined,
-        pyme_id: q.pyme_id || undefined,
+        pyme: q.pyme || undefined,
         page: q.page,
-        // si tu API soporta ordering, pásalo aquí
-        // ordering: q.ordering,
       }).pipe(
         map((p: P<Orden>) => ({ q, data: p.results, count: p.count, loading: false, error: null })),
         startWith({ q, data: [] as Orden[], count: 0, loading: true, error: null }),
@@ -66,27 +66,34 @@ export class DespachoPage {
     ),
   );
 
+  // ---- Handlers de filtros/paginación (mismo patrón que Consolidación) ----
   onFilters(v: Record<string, any>) {
-    // ✅ removemos posibles residuos de 'desde'/'hasta' del URL
-    this.navigate({ ...v, page: 1, desde: null, hasta: null });
+    const params: any = { page: 1 };
+    for (const f of this.fields) {
+      const val = Object.prototype.hasOwnProperty.call(v, f.name) ? v[f.name] : null;
+      params[f.name] = (val === '' || val == null) ? null : val;
+    }
+    this.navigate(params);
   }
 
   onCleared() {
-    // ✅ limpiar todo excepto paginación
-    this.navigate({ cd: null, pyme_id: null, page: 1, desde: null, hasta: null });
+    this.navigate({ cd: null, pyme_id: null, page: 1 });
   }
 
-  onPage(e: { pageIndex: number; pageSize: number; length: number }, q: any) {
-    this.navigate({ ...q, page: e.pageIndex + 1, desde: null, hasta: null });
+  onPage(e: { pageIndex: number; pageSize: number }, q: any) {
+    this.navigate({ ...q, page: e.pageIndex + 1 });
   }
 
   private navigate(params: any) {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { ...params, desde: null, hasta: null },
+      queryParams: params,
       queryParamsHandling: 'merge',
     });
   }
 
-  firstOf(page?: number) { const p = Number(page) || 1; return Math.max(0, (p - 1) * this.ROWS); }
+  firstOf(page?: number) {
+    const p = Number(page) || 1;
+    return Math.max(0, (p - 1) * this.ROWS);
+  }
 }

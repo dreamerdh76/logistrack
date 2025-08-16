@@ -1,17 +1,9 @@
 <section class="p-4 space-y-4" *ngIf="vm$ | async as vm">
   <h2 class="text-xl font-semibold">Expedición</h2>
 
-  <app-filters-bar
-    [fields]="fields"
-    [value]="{ chofer_id: vm.q.chofer_id, fecha: vm.q.fecha }"
-    (change)="onFilters($event)"
-    (cleared)="onCleared()"
-  />
-
   <app-error-state
     *ngIf="vm.error"
     [message]="'No se pudo cargar las órdenes.'"
-    (retry)="onFilters(vm.q)"
   ></app-error-state>
 
   <app-empty-state
@@ -20,6 +12,7 @@
     subtitle="Ajusta los filtros e inténtalo nuevamente."
   ></app-empty-state>
 
+  <div *ngIf="!vm.error && vm.count > 0" class="bg-gray-50 rounded-2xl shadow-sm p-2">
   <app-table
     *ngIf="!vm.error && vm.count > 0"
     [columns]="columns"
@@ -30,8 +23,6 @@
     (page)="onPage($event, vm.q)"
   >
   </app-table>
+  </div>
 
-  <p class="text-xs text-gray-500">
-    Ordenado por <code>{{ vm.q.ordering }}</code>
-  </p>
 </section>

@@ -11,10 +11,10 @@ class RangoFechaMixin:
 # Despacho
 class DespachoOrdenFilter(RangoFechaMixin, df.FilterSet):
     cd = df.CharFilter(method="by_cd_name")          # origen o destino
-    pyme_id = df.CharFilter(field_name="pyme_id", lookup_expr="exact")
+    pyme = df.CharFilter(method="by_pyme_name")
     class Meta:
         model = Orden
-        fields = ("cd","pyme_id")
+        fields = ("cd","pyme")
     def by_cd_name(self, qs, name, value: str):
         """
         Busca por nombre (parcial, case-insensitive) en origen o destino.
@@ -26,6 +26,17 @@ class DespachoOrdenFilter(RangoFechaMixin, df.FilterSet):
             cond |= Q(origen_cd__nombre__icontains=t) | Q(destino_cd__nombre__icontains=t)
         return qs.filter(cond).distinct()
 
+    def by_pyme_name(self, qs, name, value: str):
+        """
+        Busca por nombre de PyME (parcial, case-insensitive).
+        Soporta múltiple entrada separada por comas: ?pyme=Acme,Alfa
+        """
+        terms = [t.strip() for t in value.split(",") if t.strip()]
+        cond = Q()
+        for t in terms:
+            cond |= Q(pyme__nombre__icontains=t)
+        return qs.filter(cond).distinct()
+    
 # Preparación
 class PreparacionOrdenFilter(RangoFechaMixin, df.FilterSet):
     estado = df.CharFilter(field_name="estado_preparacion", lookup_expr="exact")
@@ -47,13 +58,22 @@ class ExpedicionOrdenFilter(df.FilterSet):
 
 # Recepción
 class RecepcionFilter(df.FilterSet):
-    cd_id = df.CharFilter(field_name="cd_id", lookup_expr="exact")
+    cd = df.CharFilter(method="by_cd_name") 
     incidencias = df.BooleanFilter(field_name="incidencias")
-    desde = df.IsoDateTimeFilter(field_name="fecha_recepcion", lookup_expr="gte")
-    hasta = df.IsoDateTimeFilter(field_name="fecha_recepcion", lookup_expr="lte")
     class Meta:
         model = Recepcion
-        fields = ("cd_id","incidencias")
+        fields = ("cd","incidencias")
+    
+    def by_cd_name(self, qs, name, value: str):
+        """
+        Busca por nombre (parcial, case-insensitive) en origen o destino.
+        Soporta múltiple entrada separada por comas: ?cd=Quito,Guayaquil
+        """
+        terms = [t.strip() for t in value.split(",") if t.strip()]
+        cond = Q()
+        for t in terms:
+            cond |= Q(cd__nombre__icontains=t)
+        return qs.filter(cond).distinct()
 
 # Consolidación
 class BloqueFilter(df.FilterSet):

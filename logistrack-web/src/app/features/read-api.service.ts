@@ -43,7 +43,7 @@ export class ReadApi {
 
   despacho(q: {
     cd?: string;
-    pyme_id?: string;
+    pyme?: string;
     page?: number;
   }): Observable<Page<Orden>> {
     return this.getCached<Page<Orden>>('/despacho/ordenes', q);
@@ -67,10 +67,8 @@ export class ReadApi {
   }
 
   recepcion(q: {
-    cd_id?: string;
+    cd?: string;
     incidencias?: boolean;
-    desde?: string;
-    hasta?: string;
     page?: number;
   }): Observable<Page<Recepcion>> {
     return this.getCached<Page<Recepcion>>('/recepcion/ordenes', q);

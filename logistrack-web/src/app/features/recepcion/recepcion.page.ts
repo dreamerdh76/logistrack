@@ -37,41 +37,33 @@ export class RecepcionPage {
   private api = inject(ReadApi);
 
   fields: FilterField[] = [
-    { type: 'text', name: 'cd_id', label: 'CD' },
-    { type: 'boolean', name: 'incidencias', label: 'Incidencias' },
-    { type: 'date', name: 'desde', label: 'Desde (YYYY-MM-DD o ISO)' },
-    { type: 'date', name: 'hasta', label: 'Hasta (YYYY-MM-DD o ISO)' },
+    { type: 'text', name: 'cd', label: 'CD' },
+    { type: 'boolean', name: 'incidencias', label: 'Incidencias' }
   ];
 
   columns: TableColumn<Recepcion>[] = [
     { key: 'orden_id', header: 'Orden' },
-    { key: 'cd_id', header: 'CD' },
-    {
-      key: 'fecha_recepcion',
-      header: 'Fecha',
-      cell: (r) => new Date(r.fecha_recepcion).toLocaleString(),
-    },
+    { key: 'cd', header: 'Centro Distribucion', cell: r => r.cd?.nombre ?? '—' },
     { key: 'usuario_receptor', header: 'Usuario' },
     { key: 'incidencias', header: 'Incidencias' },
   ];
 
   vm$ = this.route.queryParamMap.pipe(
-    map((q) => ({
-      cd_id: q.get('cd_id') || '',
-      incidencias: q.get('incidencias') ?? '', // 'true'|'false'|''
-      desde: q.get('desde') || '',
-      hasta: q.get('hasta') || '',
-      page: Number(q.get('page') || 1),
-      ordering: q.get('ordering') || '-fecha_recepcion',
-    })),
+
+    map((q) => {
+      const rawInc = q.get('incidencias');        // 'true' | 'false' | null
+      return {
+        cd: q.get('cd') || '',              // usa cd_id de punta a punta
+        incidencias: rawInc === null ? null : rawInc === 'true',
+        page: Number(q.get('page') || 1),
+        ordering: q.get('ordering') || '-fecha_recepcion',
+      };
+    }),
     switchMap((q) =>
       this.api
         .recepcion({
-          cd_id: q.cd_id || undefined,
-          incidencias:
-            q.incidencias === '' ? undefined : q.incidencias === 'true',
-          desde: q.desde || undefined,
-          hasta: q.hasta || undefined,
+          cd: q.cd || undefined,
+          incidencias: q.incidencias ?? undefined,
           page: q.page,
         })
         .pipe(
@@ -103,17 +95,17 @@ export class RecepcionPage {
   );
 
   onFilters(v: Record<string, any>) {
-    this.navigate({ ...v, page: 1 });
-  }
+      const params: any = { page: 1 }; // resetea a la primera página
+      for (const f of this.fields) {
+        const val = Object.prototype.hasOwnProperty.call(v, f.name) ? v[f.name] : null;
+        params[f.name] = (val === '' || val == null) ? null : val;
+      }
+      this.navigate(params);
+    }
   onCleared() {
-    this.navigate({
-      cd_id: null,
-      incidencias: null,
-      desde: null,
-      hasta: null,
-      page: 1,
-    });
+    this.navigate({ fecha: null, chofer_nombre: null, estado: null, page: 1 });
   }
+
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });
   }

@@ -1,77 +1,116 @@
-<section class="p-4 space-y-4" *ngIf="vm$ | async as vm">
-  <p-button
-    [text]="true"
-    icon="pi pi-arrow-left"
-    label="Volver"
-    [routerLink]="['/consolidacion']">
-  </p-button>
+<section class="p-4 space-y-4 max-w-7xl mx-auto px-3 sm:px-4" *ngIf="vm$ | async as vm">
+  <p-button [text]="true" icon="pi pi-arrow-left" label="Volver" [routerLink]="['/consolidacion']"></p-button>
 
   <ng-container *ngIf="!vm.error && vm.b as b; else errorTpl">
-
     <!-- Cabecera -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       <div class="p-3 rounded border bg-white">
         <div class="text-gray-500 text-xs">Bloque</div>
-        <div class="font-semibold">{{ b.id }}</div>
+        <div class="font-semibold break-all" [title]="b.id">{{ b.id }}</div>
       </div>
+
       <div class="p-3 rounded border bg-white">
         <div class="text-gray-500 text-xs">Fecha</div>
-        <div class="font-semibold">{{ b.fecha | date: 'short' }}</div>
+        <div class="font-semibold">{{ b.fecha | date:'short' }}</div>
       </div>
-      <div class="p-3 rounded border bg-white">
+
+      <div class="p-3 rounded border bg-white lg:col-span-2">
         <div class="text-gray-500 text-xs">Chofer</div>
         <div class="font-semibold">
-          {{ b.chofer_nombre }} ({{ b.chofer_id }})
+          {{ b.chofer?.nombre || b.chofer_nombre }}
+          <span class="text-gray-500" *ngIf="b.chofer?.id as cid">({{ cid }})</span>
         </div>
       </div>
+
       <div class="p-3 rounded border bg-white">
         <div class="text-gray-500 text-xs">Órdenes</div>
         <div class="font-semibold">{{ b.total_ordenes }}</div>
       </div>
     </div>
 
-    <!-- Loading local (opcional) -->
+    <!-- Loading -->
     <div *ngIf="vm.loading" class="text-sm text-gray-500">Cargando órdenes…</div>
 
-    <!-- Tabla de órdenes -->
+    <!-- ===== Mobile cards (<md) ===== -->
     <ng-container *ngIf="!vm.loading && b.ordenes?.length; else emptyTpl">
-      <p-table
-        [value]="b.ordenes"
-        [size]="'large'"
-        [paginator]="false"
-        dataKey="id"
-        [rowTrackBy]="rowTrackBy"
-        class="w-full bg-white rounded-2xl overflow-hidden">
+      <div class="md:hidden space-y-3">
+        <article *ngFor="let r of b.ordenes; trackBy: rowTrackBy" class="bg-white rounded-xl border p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="font-mono text-xs break-all" [title]="r.id">{{ r.id }}</div>
+            <span
+              class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium min-w-[6.5rem] justify-center"
+              [class]="statusClass(r.estado_preparacion_label || r.estado_preparacion)">
+              {{ r.estado_preparacion_label || r.estado_preparacion }}
+            </span>
+          </div>
 
-        <ng-template pTemplate="header">
-          <tr>
-            <th scope="col">Orden</th>
-            <th scope="col">PyME</th>
-            <th scope="col">Origen</th>
-            <th scope="col">Destino</th>
-            <th scope="col">Fecha</th>
-            <th scope="col">Preparación</th>
-          </tr>
-        </ng-template>
+          <dl class="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <dt class="text-gray-500">PyME</dt>
+              <dd class="font-medium truncate" [title]="r.pyme.nombre || '—'">{{ r.pyme.nombre || '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">Fecha</dt>
+              <dd class="font-medium">{{ r.fecha_despacho | date:'short' }}</dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">Origen</dt>
+              <dd class="font-medium truncate" [title]="r.origen_cd.nombre || '—'">{{ r.origen_cd.nombre || '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">Destino</dt>
+              <dd class="font-medium truncate" [title]="r.destino_cd.nombre || '—'">{{ r.destino_cd.nombre || '—' }}</dd>
+            </div>
+            <div class="col-span-2">
+              <dt class="text-gray-500">Chofer</dt>
+              <dd class="font-medium truncate" [title]="r.chofer?.nombre || '—'">{{ r.chofer?.nombre || '—' }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
 
-        <ng-template pTemplate="body" let-r>
-          <tr>
-            <td class="whitespace-nowrap">{{ r.id }}</td>
-            <td>{{ r.pyme_id }}</td>
-            <td>{{ r.origen_cd_id }}</td>
-            <td>{{ r.destino_cd_id }}</td>
-            <td class="whitespace-nowrap">{{ r.fecha_despacho | date: 'short' }}</td>
-            <td>
-              <!-- Badge tailwind para evitar solapes de tema -->
-              <span
-                class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
-                [class]="statusClass(r.estado_preparacion)">
-                {{ r.estado_preparacion }}
-              </span>
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <!-- ===== Desktop table (≥md) ===== -->
+      <div class="hidden md:block">
+        <div class="overflow-x-auto bg-white rounded-2xl max-h-[65vh]">
+          <p-table
+            [value]="b.ordenes"
+            [size]="'large'"
+            [paginator]="false"
+            [scrollable]="true"
+            scrollHeight="60vh"
+            dataKey="id"
+            [rowTrackBy]="rowTrackBy"
+            class="min-w-full">
+            <ng-template pTemplate="header">
+              <tr>
+                <th scope="col" class="whitespace-nowrap">Orden</th>
+                <th scope="col">PyME</th>
+                <th scope="col" class="hidden lg:table-cell">Origen</th>
+                <th scope="col" class="hidden lg:table-cell">Destino</th>
+                <th scope="col" class="whitespace-nowrap">Fecha</th>
+                <th scope="col">Preparación</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-r>
+              <tr>
+                <td class="whitespace-nowrap font-mono text-xs break-all" [title]="r.id">{{ r.id }}</td>
+                <td class="truncate max-w-[14rem]" [title]="r.pyme?.nombre || '—'">{{ r.pyme?.nombre || '—' }}</td>
+                <td class="hidden lg:table-cell truncate max-w-[12rem]" [title]="r.origen_cd?.nombre || '—'">{{ r.origen_cd?.nombre || '—' }}</td>
+                <td class="hidden lg:table-cell truncate max-w-[12rem]" [title]="r.destino_cd?.nombre || '—'">{{ r.destino_cd?.nombre || '—' }}</td>
+                <td class="whitespace-nowrap">{{ r.fecha_despacho | date:'short' }}</td>
+                <td>
+                  <span
+                    class="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium min-w-[6.5rem] justify-center"
+                    [class]="statusClass(r.estado_preparacion_label || r.estado_preparacion)">
+                    {{ r.estado_preparacion_label || r.estado_preparacion }}
+                  </span>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
     </ng-container>
   </ng-container>
 
@@ -80,9 +119,6 @@
   </ng-template>
 
   <ng-template #errorTpl>
-    <app-error-state
-      [message]="'No se pudo cargar el bloque.'"
-      (retry)="onRetry()">
-    </app-error-state>
+    <app-error-state [message]="'No se pudo cargar el bloque.'" (retry)="onRetry()"></app-error-state>
   </ng-template>
 </section>

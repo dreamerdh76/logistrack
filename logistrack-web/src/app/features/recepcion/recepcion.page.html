@@ -4,10 +4,8 @@
   <app-filters-bar
     [fields]="fields"
     [value]="{
-      cd_id: vm.q.cd_id,
-      incidencias: vm.q.incidencias,
-      desde: vm.q.desde,
-      hasta: vm.q.hasta,
+      cd_id: vm.q.cd,
+      incidencias: vm.q.incidencias
     }"
     (change)="onFilters($event)"
     (cleared)="onCleared()"

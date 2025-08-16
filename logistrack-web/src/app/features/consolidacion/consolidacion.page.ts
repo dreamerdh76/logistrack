@@ -71,8 +71,8 @@ export class ConsolidacionPage {
     {
       field: 'total_ordenes',
       header: 'Órdenes',
-      headerClass:'text-right col-orders',
-      bodyClass:'text-right tabular-nums',
+      headerClass:'col-orders',
+      bodyClass:'tabular-nums',
       colClass: 'col-orders'
     },
     {
@@ -80,7 +80,7 @@ export class ConsolidacionPage {
       header: 'Estado',
       template: (r: BloqueList) => r.estado_completitud,
       colClass:'col-status',
-      headerClass:'text-right col-status',
+      headerClass:'col-status',
       // Colorea según estado
       bodyClass:(r)=> 'col-status ' + (r.estado_completitud==='INC' ? 'text-red-600 font-medium'
                                   : r.estado_completitud==='COM' ? 'text-green-600 font-medium' : '')

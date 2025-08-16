@@ -29,14 +29,20 @@ class Chofer(TimeStamped):
     nombre = models.CharField(max_length=200)
     def __str__(self): return self.nombre
 
+class TipoCentro(models.TextChoices):
+    CD = "CD", "Centro de Distribución"
+    CAP = "CAP", "Centro de Admisión"
+
 class Pyme(TimeStamped):
     id = models.CharField(primary_key=True, max_length=64)
     nombre = models.CharField(max_length=200)
 
+
 class CentroDistribucion(TimeStamped):
     id = models.CharField(primary_key=True, max_length=64)
     nombre = models.CharField(max_length=200)
-
+    tipo = models.CharField(max_length=3, choices=TipoCentro.choices, default=TipoCentro.CD)
+    pyme_asociada = models.ForeignKey('Pyme', null=True, blank=True, on_delete=models.SET_NULL)
 class Producto(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sku = models.CharField(max_length=64, unique=True, db_index=True)
@@ -45,6 +51,8 @@ class Producto(models.Model):
 
     def __str__(self): return f"{self.sku} - {self.nombre}"
 # -------- Read-model de órdenes --------
+
+
 class Orden(TimeStamped):
     id = models.CharField(primary_key=True, max_length=64)
     pyme = models.ForeignKey(
@@ -95,6 +103,18 @@ class OrdenProducto(models.Model):
         return self.qty * self.precio_unitario
     
 # -------- Consolidación (bloques) --------
+class Bolsa(TimeStamped):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    codigo = models.CharField(max_length=64, unique=True, db_index=True)  # etiqueta/QR único
+    orden = models.ForeignKey(Orden, on_delete=models.CASCADE, related_name='bolsas')
+    peso = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    volumen = models.DecimalField(max_digits=12, decimal_places=6, default=0)
+    preparada = models.BooleanField(default=False)
+    fecha_preparacion = models.DateTimeField(null=True, blank=True)
+    usuario_preparador = models.CharField(max_length=120, null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['orden'])]
 class Bloque(TimeStamped):
     id = models.CharField(primary_key=True, max_length=64)
     fecha = models.DateTimeField(db_index=True)

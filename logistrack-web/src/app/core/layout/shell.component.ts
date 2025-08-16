@@ -30,11 +30,11 @@ export class ShellComponent {
 
   // Modelo del PanelMenu (router + cierre del drawer en móvil)
   readonly items: MenuItem[] = [
-    { label: 'Consolidación', icon: 'pi pi-box',        routerLink: ['/consolidacion'], command: () => this.mobileOpen = false },
     { label: 'Despacho',      icon: 'pi pi-truck',      routerLink: ['/despacho'],      command: () => this.mobileOpen = false },
     { label: 'Preparación',   icon: 'pi pi-wrench',     routerLink: ['/preparacion'],   command: () => this.mobileOpen = false },
     { label: 'Expedición',    icon: 'pi pi-send',       routerLink: ['/expedicion'],    command: () => this.mobileOpen = false },
     { label: 'Recepción',     icon: 'pi pi-inbox',      routerLink: ['/recepcion'],     command: () => this.mobileOpen = false },
+    { label: 'Consolidación', icon: 'pi pi-box',        routerLink: ['/consolidacion'], command: () => this.mobileOpen = false },
     { label: 'Distribución',  icon: 'pi pi-share-alt',  routerLink: ['/distribucion'],  command: () => this.mobileOpen = false },
   ];
 

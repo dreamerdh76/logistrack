@@ -7,7 +7,7 @@
       <!-- ✅ solo cd y pyme_id -->
       <app-filters-bar
         [fields]="fields"
-        [value]="{ cd: vm.q.cd, pyme_id: vm.q.pyme_id }"
+        [value]="{ cd: vm.q.cd, pyme: vm.q.pyme }"
         [autoApply]="true"
         (change)="onFilters($event)"
         (cleared)="onCleared()">
@@ -26,7 +26,7 @@
       subtitle="Ajusta los filtros e inténtalo nuevamente.">
     </app-empty-state>
 
-    <div *ngIf="!vm.error && vm.count > 0" class="bg-white rounded-2xl shadow-sm p-2">
+    <div *ngIf="!vm.error && vm.count > 0" class="bg-gray-50 rounded-2xl shadow-sm p-2">
       <app-table
         [columns]="columns"
         [value]="vm.data"

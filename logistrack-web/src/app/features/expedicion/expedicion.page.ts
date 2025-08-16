@@ -4,10 +4,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
 
-import {
-  FiltersBarComponent,
-  FilterField,
-} from '../../shared/ui/filters-bar/filters-bar.component';
 import { EmptyStateComponent } from '../../shared/ui/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/ui/error-state/error-state.component';
 import {
@@ -23,7 +19,6 @@ import { Orden, Page as P } from '../../shared/types/read-model';
   selector: 'app-expedicion',
   imports: [
     CommonModule,
-    FiltersBarComponent,
     EmptyStateComponent,
     ErrorStateComponent,
     TableComponent,
@@ -36,21 +31,11 @@ export class ExpedicionPage {
   private router = inject(Router);
   private api = inject(ReadApi);
 
-  fields: FilterField[] = [
-    { type: 'text', name: 'chofer_id', label: 'Chofer' },
-    { type: 'date', name: 'fecha', label: 'Fecha (YYYY-MM-DD)' },
-  ];
-
   columns: TableColumn<Orden>[] = [
-    { key: 'id', header: 'Orden' },
-    { key: 'chofer_id', header: 'Chofer' },
-    {
-      key: 'fecha_despacho',
-      header: 'Fecha',
-      cell: (r) => new Date(r.fecha_despacho).toLocaleString(),
-    },
-    { key: 'peso_total', header: 'Peso' },
-    { key: 'volumen_total', header: 'Volumen' },
+    { key: 'id', header: 'Orden',  cell: r => r.id },
+    { key: 'chofer', header: 'Chofer', cell: r => r.chofer?.nombre ?? '—' },
+    {key: 'bolsas_count', header: 'Bolsas'},
+    { key: 'fecha_despacho', header: 'Fecha', cell: r => new Date(r.fecha_despacho).toLocaleString() },
   ];
 
   vm$ = this.route.queryParamMap.pipe(
@@ -95,12 +80,6 @@ export class ExpedicionPage {
     ),
   );
 
-  onFilters(v: Record<string, any>) {
-    this.navigate({ ...v, page: 1 });
-  }
-  onCleared() {
-    this.navigate({ chofer_id: null, fecha: null, page: 1 });
-  }
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });
   }

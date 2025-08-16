@@ -1,3 +1,4 @@
+// bloque-detalle.page.ts
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -39,14 +40,14 @@ export class BloqueDetallePage {
   // Dispara recargas manuales (botón reintentar)
   private readonly refresh$ = new Subject<void>();
 
+  // Stream del id de ruta
+  private readonly id$ = this.route.paramMap.pipe(
+    map((p) => p.get('id')!),
+    distinctUntilChanged()
+  );
+
   // ViewModel tipado + loading
-  vm$ = combineLatest([
-    this.route.paramMap.pipe(
-      map((p) => p.get('id')!),
-      distinctUntilChanged()
-    ),
-    this.refresh$.pipe(startWith(void 0))
-  ]).pipe(
+  vm$ = combineLatest([this.id$, this.refresh$.pipe(startWith(void 0))]).pipe(
     switchMap(([id]) =>
       this.api.bloqueDetalle(id).pipe(
         map((b) => ({ b, error: null, loading: false }) as VM),
@@ -56,23 +57,22 @@ export class BloqueDetallePage {
     )
   );
 
-  onRetry() { this.refresh$.next(); }
+  onRetry() {
+    this.refresh$.next();
+  }
 
-  // PrimeNG trackBy (mejor rendimiento)
+  // PrimeNG trackBy
   trackOrden = (_: number, o: Orden) => o.id;
 
-  // --- Estado → clases Tailwind (sin crear objetos en cada CD)
+  // --- Estado → clases Tailwind
   private normalizeStatus(v?: string): 'COM' | 'INC' | 'PEN' | 'UNK' {
     const k = (v ?? '').trim().toUpperCase();
     if (k.startsWith('COMPLET')) return 'COM';
     if (k.startsWith('INCOMPLET')) return 'INC';
     if (k.startsWith('PEND')) return 'PEN';
-    if (k === 'COM') return 'COM';
-    if (k === 'INC') return 'INC';
-    if (k === 'PEN') return 'PEN';
+    if (k === 'COM' || k === 'INC' || k === 'PEN') return k as any;
     return 'UNK';
   }
-
   statusClass(v?: string): string {
     switch (this.normalizeStatus(v)) {
       case 'COM': return 'bg-green-600 text-white';
@@ -81,5 +81,6 @@ export class BloqueDetallePage {
       default:    return 'bg-gray-300 text-gray-900';
     }
   }
-  rowTrackBy = (_index: number, r: Orden) => r.id
+
+  rowTrackBy = (_index: number, r: Orden) => r.id;
 }
