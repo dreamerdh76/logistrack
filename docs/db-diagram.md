@@ -4,97 +4,95 @@
 ```mermaid
 erDiagram
   PYME {
-    char64 id PK
-    varchar200 nombre
+    string id PK
+    string nombre
   }
 
   CENTRO_DISTRIBUCION {
-    char64 id PK
-    varchar200 nombre
-    enum tipo
-    char64 pyme_asociada FK NULL
+    string id PK
+    string nombre
+    string tipo
+    string pyme_asociada FK
   }
 
   CHOFER {
-    uuid id PK
-    varchar200 nombre
+    string id PK
+    string nombre
   }
 
   PRODUCTO {
-    uuid id PK
-    varchar64 sku UK
-    varchar200 nombre
-    bool activo
+    string id PK
+    string sku
+    string nombre
+    boolean activo
   }
 
   ORDEN {
-    char64 id PK
-    char64 pyme_id FK
-    char64 origen_cd_id FK
-    char64 destino_cd_id FK
+    string id PK
+    string pyme_id FK
+    string origen_cd_id FK
+    string destino_cd_id FK
     datetime fecha_despacho
-    enum estado_preparacion
-    decimal12_3 peso_total
-    decimal12_6 volumen_total
-    uuid chofer_id FK NULL
+    string estado_preparacion
+    decimal peso_total
+    decimal volumen_total
+    string chofer_id FK
   }
 
   ORDEN_PRODUCTO {
-    bigint id PK
-    char64 orden_id FK
-    uuid producto_id FK
-    uint qty
-    decimal12_3 peso
-    decimal12_6 volumen
-    UK orden_id_producto_id
+    int id PK
+    string orden_id FK
+    string producto_id FK
+    int qty
+    decimal peso
+    decimal volumen
   }
 
   BOLSA {
-    uuid id PK
-    varchar64 codigo UK
-    char64 orden_id FK
-    decimal12_3 peso
-    decimal12_6 volumen
-    bool preparada
-    datetime fecha_preparacion NULL
-    varchar120 usuario_preparador NULL
+    string id PK
+    string codigo
+    string orden_id FK
+    decimal peso
+    decimal volumen
+    boolean preparada
+    datetime fecha_preparacion
+    string usuario_preparador
   }
 
   BLOQUE {
-    char64 id PK
+    string id PK
     datetime fecha
-    uuid chofer_id FK
-    varchar200 chofer_nombre
-    uint total_ordenes
-    enum estado_completitud
+    string chofer_id FK
+    string chofer_nombre
+    int total_ordenes
+    string estado_completitud
   }
 
   BLOQUE_ORDEN {
-    bigint id PK
-    char64 bloque_id FK
-    char64 orden_id FK
-    UK bloque_id_orden_id
+    int id PK
+    string bloque_id FK
+    string orden_id FK
   }
 
   RECEPCION {
-    bigint id PK
-    char64 orden_id FK UK
-    char64 cd_id FK
+    int id PK
+    string orden_id FK
+    string cd_id FK
     datetime fecha_recepcion
-    varchar120 usuario_receptor
-    bool incidencias
+    string usuario_receptor
+    boolean incidencias
   }
 
   DISTRIBUCION {
-    bigint id PK
-    char64 orden_id FK UK
-    enum estado
-    datetime fecha_entrega NULL
-    uuid chofer_id FK NULL
+    int id PK
+    string orden_id FK
+    string estado
+    datetime fecha_entrega
+    string chofer_id FK
   }
 
   EVENT_OFFSET {
-    varchar128 event_id PK
+    string event_id PK
     datetime processed_at
   }
 
@@ -119,6 +117,7 @@ erDiagram
 
   ORDEN ||--|| DISTRIBUCION : tiene_entrega
   CHOFER ||--o{ DISTRIBUCION : realiza_entregas
+
 ```
 
 ## Vista alternativa (classDiagram – fallback)
