@@ -58,9 +58,6 @@ docker compose ps
 # Swagger: http://localhost:8000/schema/swagger-ui/
 # Angular: http://localhost:4200
 ```
-> **Sin servicio init**: migraciones y seed se ejecutan **en el mismo contenedor del API** conforme al `command` de `docker-compose.yml`.
-
----
 
 ## Publicar 30 eventos “BloqueConsolidadoListo” (PHP → Redis)
 
