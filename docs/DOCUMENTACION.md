@@ -31,26 +31,58 @@
 **Diagrama (alto nivel)**
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, ui-sans-serif, system-ui","edgeLabelBackground":"#fff"}}}%%
+%%{init: {"theme":"base","themeVariables":{
+  "fontFamily":"Inter, ui-sans-serif, system-ui",
+  "primaryTextColor":"#0f172a",
+  "lineColor":"#334155",
+  "edgeLabelBackground":"#fff"
+}}}%%
 flowchart LR
-  user[Usuario] -->|HTTP| web[Angular SPA<br>logistrack-web]
+  %% Nodos
+  user([Usuario])
+  web[Angular SPA<br>logistrack-web]
+
   subgraph Django[ms_distribucion · Django + DRF]
     apiD[REST API]
     worker[Worker<br>consume_distribucion]
     db[(MySQL)]
     apiD --> db
   end
+
   subgraph Symfony[Symfony CLI · productor]
     seeder[app:seed-events]
   end
-  redis[(Redis Streams)]
-  contracts[Contracts JSON Schema<br>$CONTRACTS_DIR]
 
+  subgraph Infra[Infraestructura]
+    redis[(Redis Streams)]
+    contracts[Contracts JSON Schema<br>$CONTRACTS_DIR]
+  end
+
+  %% Flujos
+  user -->|HTTP| web
   web -->|REST JSON| apiD
   seeder -.->|produce CloudEvent v2| redis
-  worker -.->|consume/validar| redis
+  worker -.->|consume / validar| redis
   worker -->|jsonschema| contracts
   worker -->|upsert| db
+
+  %% Estilos
+  classDef web fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:1px;
+  classDef api fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:1px;
+  classDef worker fill:#fef9c3,stroke:#ca8a04,color:#422006,stroke-dasharray:4 2,stroke-width:1px;
+  classDef db fill:#fee2e2,stroke:#b91c1c,color:#450a0a,stroke-width:1px;
+  classDef queue fill:#e0f2fe,stroke:#0284c7,color:#082f49,stroke-width:1px;
+  classDef contracts fill:#f5f3ff,stroke:#7c3aed,color:#2e1065,stroke-width:1px;
+  classDef cli fill:#f0fdf4,stroke:#10b981,color:#064e3b,stroke-width:1px;
+
+  class web web;
+  class apiD api;
+  class worker worker;
+  class db db;
+  class redis queue;
+  class contracts contracts;
+  class seeder cli;
+
 ```
 
 ---
