@@ -1,3 +1,7 @@
+# Arquitectura LogisTrack
+
+## Diagrama de componentes
+```mermaid
 flowchart LR
   user[Usuario] -->|HTTP| web[Angular SPA<br/>(logistrack-web)]
 
@@ -25,3 +29,19 @@ flowchart LR
   apiS -. produce CloudEvent v2 .-> redis
   redis -. consumer: manage.py consume_distribucion .-> apiD
   apiD -. valida CE (jsonschema) .-> contracts
+```
+
+## Flujo de eventos
+```mermaid
+sequenceDiagram
+  participant SY as Symfony
+  participant RS as Redis Stream
+  participant DJ as ms_distribucion
+  participant DB as MySQL
+
+  SY->>RS: XADD BloqueConsolidadoListo (CE v2)
+  DJ->>RS: XREADGROUP (consume_distribucion)
+  DJ->>DJ: validate_cloudevent() / jsonschema
+  DJ->>DB: upsert bloque/ordenes + link + set incompleto
+  DJ-->>RS: XACK
+```
