@@ -3,15 +3,15 @@
 ## Diagrama de componentes
 ```mermaid
 flowchart LR
-  user[Usuario] -->|HTTP| web[Angular SPA<br/>(logistrack-web)]
+  user[Usuario] -->|HTTP| web[Angular SPA<br>logistrack-web]
 
-  subgraph Django[ms_distribucion (Django/DRF)]
-    apiD[REST API<br/>/despacho /preparacion /consolidacion /recepcion /expedicion]
+  subgraph Django[ms_distribucion &#40;Django/DRF&#41;]
+    apiD[REST API<br>/despacho /preparacion /consolidacion /recepcion /expedicion]
     db[(MySQL)]
     apiD --> db
   end
 
-  subgraph Symfony[Backend Symfony (MySQL)]
+  subgraph Symfony[Backend Symfony &#40;MySQL&#41;]
     apiS[API / Productor de eventos]
     mysql[(MySQL)]
     apiS --> mysql
@@ -19,16 +19,15 @@ flowchart LR
 
   subgraph Infra[Infraestructura]
     redis[(Redis Streams)]
-    contracts[Contracts JSON Schema<br/>($CONTRACTS_DIR)]
+    contracts[Contracts JSON Schema<br>$CONTRACTS_DIR]
   end
 
   web -->|REST JSON| apiD
-  %% Si tu web también habla directo a Symfony, habilita:
   %% web -->|REST JSON| apiS
 
   apiS -. produce CloudEvent v2 .-> redis
   redis -. consumer: manage.py consume_distribucion .-> apiD
-  apiD -. valida CE (jsonschema) .-> contracts
+  apiD -. valida CE &#40;jsonschema&#41; .-> contracts
 ```
 
 ## Flujo de eventos
