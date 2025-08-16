@@ -25,9 +25,9 @@ flowchart LR
   web -->|REST JSON| apiD
   %% web -->|REST JSON| apiS
 
-  apiS -. produce CloudEvent v2 .-> redis
-  redis -. consumer: manage.py consume_distribucion .-> apiD
-  apiD -. valida CE &#40;jsonschema&#41; .-> contracts
+  apiS -.->|produce CloudEvent v2| redis
+  redis -.->|consumer manage.py consume_distribucion| apiD
+  apiD -.->|valida CE &#40;jsonschema&#41;| contracts
 ```
 
 ## Flujo de eventos
