@@ -20,7 +20,6 @@ Interacciones con la ia(chatgpt 5):
 
 **Captura 1:**
 ![Captura 1](./IA_INTERACCIONES_assets/captura_1.png)
-**Transcripción:** ...
 
 ---
 
@@ -28,16 +27,12 @@ Interacciones con la ia(chatgpt 5):
 
 **Captura 2:**
 ![Captura 2](./IA_INTERACCIONES_assets/captura_2.png)
-**Transcripción:** ...
-
-**Captura 3:**
-![Captura 3](./IA_INTERACCIONES_assets/captura_3.png)
-**Transcripción:** ...
 
 ---
 
 ## Interacción 4 — crear las versiones iniciales de mis puertos
-
+**Captura 3:**
+![Captura 3](./IA_INTERACCIONES_assets/captura_3.png)
 ---
 
 ## Interacción 5 — genrear la  primera version del validator y lodaer para el contrato1) Apunta Django al directorio de contratos
@@ -339,13 +334,8 @@ filterset_class = DistribucionFilter
 ordering_fields = ["fecha_entrega","estado","chofer_id"]
 ```
 
----
 
-## Interacción 8 — //chatgpt.com/share/68a100cf-93dc-800b-83e2-90c62addd19c
-
----
-
-## Interacción 9 — Objetivo de la conversación: generar los .spec.ts de mis componentes en Angular
+## Interacción 8 — Objetivo de la conversación: generar los .spec.ts de mis componentes en Angular
 
 **Transcripción / extracto:**
 
