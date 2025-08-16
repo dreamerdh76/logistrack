@@ -58,9 +58,6 @@ docker compose ps
 # Swagger: http://localhost:8000/schema/swagger-ui/
 # Angular: http://localhost:4200
 ```
-> **Sin servicio init**: migraciones y seed se ejecutan **en el mismo contenedor del API** conforme al `command` de `docker-compose.yml`.
-
----
 
 ## Publicar 30 eventos “BloqueConsolidadoListo” (PHP → Redis)
 
@@ -68,11 +65,7 @@ Ejecuta el comando en **symfony_cli** para publicar 30 eventos en el stream conf
 
 ```bash
 # Contenedor ya corriendo
-docker compose exec symfony_cli php bin/console app:seed-events --count=30
-
-# Contenedor efímero (alternativa)
-docker compose run --rm symfony_cli php bin/console app:seed-events --count=30
-```
+docker compose exec symfony_cli php bin/console app:seed-events
 
 > Revisa que en `symfony_cli` estén definidos, como mínimo:  
 > `REDIS_DSN=redis://redis:6379` y `REDIS_STREAM=distribucion.bloques`.  
