@@ -1,75 +1,152 @@
-version: "3.9"
-
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    command: ["--default-authentication-plugin=mysql_native_password","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: "12345678"
+      MYSQL_DATABASE: "distribucion"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p12345678 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
-    command: ["redis-server","--save","", "--appendonly","no"]
-    ports: ["6379:6379"]
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: distribucion
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app
-    volumes: ["pgdata:/var/lib/postgresql/data"]
-    ports: ["5432:5432"]
-
-  # API de lectura (Django)
-  ms-api:
+  # --- Backend Django (ms_distribucion) ---
+  ms_distribucion:
     build:
       context: ./ms_distribucion
-      dockerfile: Dockerfile
+      target: runtime
+    container_name: ms_distribucion
+    env_file:
+      - ./ms_distribucion/.env
     environment:
       DJANGO_SETTINGS_MODULE: ms_distribucion.settings
-      DATABASE_URL: postgres://app:app@db:5432/distribucion
-      REDIS_DSN: redis://redis:6379
-      LOGISTRACK_CONTRACTS_DIR: /contracts
-      # CORS si lo necesitas para Angular
-      # CORS_ALLOWED_ORIGINS: http://localhost:4200
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "12345678"
+      MYSQL_DB: distribucion
+      REDIS_DSN: "redis://redis:6379/0"
+      LOGISTRACK_CONTRACTS_DIR: /contracts/schemas   # <- usar este en settings.py
+      CONTRACTS_DIR: /contracts/schemas              # <- compat si tu código lo lee
+      RUN_FACTORY: "true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
     volumes:
       - ./ms_distribucion:/app
-      - ./logistrack-contracts:/contracts:ro
-    depends_on: [db, redis]
-    ports: ["8000:8000"]
-    command: python manage.py runserver 0.0.0.0:8000
+      - ./logistrack-contracts/schemas:/contracts/schemas:ro
+    restart: unless-stopped
+    command:
+      [
+        "sh","-lc",
+        "python manage.py migrate --noinput \
+        && if [ \"${RUN_FACTORY:-false}\" = \"true\" ]; then \
+              python manage.py shell -c 'from distribucion.factory import run; run()'; \
+            fi \
+        && gunicorn ms_distribucion.wsgi:application -b 0.0.0.0:8000 -w 3 --timeout 120"
+      ]
 
-  # Worker de consumo de eventos (Redis Streams)
-  ms-worker:
+  ms_distribucion_worker:
     build:
       context: ./ms_distribucion
-      dockerfile: Dockerfile
+      target: runtime
     environment:
       DJANGO_SETTINGS_MODULE: ms_distribucion.settings
-      DATABASE_URL: postgres://app:app@db:5432/distribucion
-      REDIS_DSN: redis://redis:6379
-      LOGISTRACK_CONTRACTS_DIR: /contracts
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "12345678"
+      MYSQL_DB: distribucion
+      REDIS_DSN: "redis://redis:6379/0"
+      LOGISTRACK_CONTRACTS_DIR: /contracts/schemas
+      REDIS_STREAM: "distribucion.bloques"
+      REDIS_GROUP: "grp.distribucion"
+      REDIS_CONSUMER: "worker.1"
+      DLQ_STREAM: "ms.dlq.distribucion"
+      XREAD_COUNT: "100"
+      XREAD_BLOCK_MS: "5000"
+      XAUTOCLAIM_IDLE: "60000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      ms_distribucion_init:
+        condition: service_completed_successfully
     volumes:
       - ./ms_distribucion:/app
-      - ./logistrack-contracts:/contracts:ro
-    depends_on: [db, redis]
-    command: python manage.py consume_distribucion
+      - ./logistrack-contracts/schemas:/contracts/schemas:ro
+    restart: unless-stopped
+    command: ["sh","-lc","python manage.py consume_distribucion"]
+  # --- Front Angular (logistrack-web) ---
+  logistrack_web:
+    build:
+      context: ./logistrack-web
+    container_name: logistrack_web
+    environment:
+      MODE: serve
+      PORT: "4200"
+      NG_CLI_ANALYTICS: "ci"
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "200"
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./logistrack-web:/app
+      - /app/node_modules
+    depends_on:
+      - ms_distribucion
+    restart: unless-stopped
 
-  # Productor (Symfony con Predis)
-  symfony:
+  symfony_cli:
     build:
       context: ./symfony-backend
-      dockerfile: Dockerfile
+      target: runtime-cli      
+    container_name: symfony_cli
+    working_dir: /app
+    env_file:
+      - ./symfony-backend/.env
     environment:
-      APP_ENV: prod
-      REDIS_DSN: tcp://redis:6379
-      REDIS_PREFIX: logistrack:dev
-      REDIS_STREAM: distribucion.bloques
-      DLQ_STREAM: dlq.distribucion.bloques
-      SOURCE_URI: symfony://distribucion
-      # Puedes dejar el dataschema HTTP; el consumer resolverá local por sufijo
-      CONTRACT_DATA_SCHEMA: https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.0/schema.json
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      DATABASE_URL: "mysql://root:12345678@mysql:3306/distribucion?charset=utf8mb4"
+      REDIS_DSN: "redis://redis:6379"
+      REDIS_STREAM: "distribucion.bloques"
+      DLQ_STREAM: "dlq.distribucion.bloques"
+      SOURCE_URI: "symfony://distribucion"
+      CONTRACT_DATA_SCHEMA: "https://contracts.logistrack/schemas/BloqueConsolidadoListo/1.2/schema.json"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy 
     volumes:
       - ./symfony-backend:/app
-      - ./logistrack-contracts:/contracts:ro
-    depends_on: [redis]
-    # para publicar manualmente usaremos `docker compose run`
+    command: ["sleep","infinity"]   
+    restart: unless-stopped
 
 volumes:
-  pgdata: {}
-
+  mysql_data:

@@ -60,6 +60,10 @@ class ExpedicionOrdenList(generics.ListAPIView):
         )
     
 # Recepción
+@extend_schema(parameters=[
+    OpenApiParameter(name='incidencias', location='query', required=False, type=bool),
+    OpenApiParameter(name='cd', location='query', required=False, type=str),
+])
 class RecepcionOrdenList(generics.ListAPIView):
     queryset = Recepcion.objects.select_related("orden").order_by("-fecha_recepcion")
     serializer_class = RecepcionSerializer
@@ -84,6 +88,9 @@ class BloqueDetail(generics.RetrieveAPIView):
     lookup_field = "id"
 
 # Distribución
+@extend_schema(parameters=[
+  OpenApiParameter(name='estado', location='query', required=False, type=str)
+])
 class DistribucionOrdenList(generics.ListAPIView):
     queryset = Distribucion.objects.select_related("orden").order_by("-fecha_entrega", "-orden__fecha_despacho")
     serializer_class = DistribucionSerializer

@@ -1,3 +1,4 @@
+// src/app/shared/directives/no-autofocus.directive.ts
 import {
   AfterViewInit, Directive, ElementRef, Inject, OnDestroy, PLATFORM_ID
 } from '@angular/core';
@@ -19,12 +20,23 @@ export class NoAutofocusDirective implements AfterViewInit, OnDestroy {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
+  /** Limpia el propio elemento y sus descendientes */
   private stripAutofocus = (root: Element) => {
-    // Solo en browser
     if (!this.isBrowser) return;
 
-    root.querySelectorAll('[autofocus]').forEach(el => el.removeAttribute('autofocus'));
+    const cleanOne = (el: Element) => {
+      if (el.hasAttribute?.('autofocus')) {
+        el.removeAttribute('autofocus');
+        if (el === this.doc.activeElement) (el as HTMLElement).blur?.();
+      }
+    };
 
+    // 1) el propio root
+    cleanOne(root);
+    // 2) todos los descendientes
+    root.querySelectorAll('[autofocus]').forEach(cleanOne);
+
+    // 3) seguridad extra por si el activo aún lo tiene
     const active = this.doc.activeElement as HTMLElement | null;
     if (active?.hasAttribute?.('autofocus')) {
       active.removeAttribute('autofocus');
@@ -35,25 +47,22 @@ export class NoAutofocusDirective implements AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     if (!this.isBrowser) return;
 
-    // Limpieza inicial del subárbol
+    // Limpieza inicial
     this.stripAutofocus(this.host.nativeElement);
 
-    // Comprueba soporte del observer
+    // Observer (si el navegador lo soporta)
     const MO: typeof MutationObserver | undefined =
       typeof (globalThis as any).MutationObserver !== 'undefined'
         ? (globalThis as any).MutationObserver
         : undefined;
-
-    if (!MO) return; // (Safari viejo en webview, bots, etc.)
+    if (!MO) return;
 
     this.mo = new MO(muts => {
       for (const m of muts) {
         if (m.type === 'childList') {
           m.addedNodes.forEach(n => n instanceof Element && this.stripAutofocus(n));
         } else if (m.type === 'attributes' && m.attributeName === 'autofocus') {
-          const el = m.target as Element;
-          el.removeAttribute('autofocus');
-          if (el === this.doc.activeElement) (el as HTMLElement).blur?.();
+          this.stripAutofocus(m.target as Element);
         }
       }
     });

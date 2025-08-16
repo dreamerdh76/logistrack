@@ -77,7 +77,7 @@ export class DespachoPage {
   }
 
   onCleared() {
-    this.navigate({ cd: null, pyme_id: null, page: 1 });
+    this.navigate({ cd: null, pyme: null, page: 1 });
   }
 
   onPage(e: { pageIndex: number; pageSize: number }, q: any) {

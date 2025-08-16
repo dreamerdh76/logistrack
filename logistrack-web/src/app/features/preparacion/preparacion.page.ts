@@ -116,9 +116,7 @@ export class PreparacionPage {
     this.navigate(params);
   }
   onCleared() {
-    const params: any = { page: 1 };
-    for (const f of this.fields) params[f.name] = null;
-    this.navigate(params);
+    this.navigate({estado: null, page: 1 });
   }
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });

@@ -121,7 +121,7 @@ export class DistribucionPage {
 
   // Limpiar filtros (ojo: chofer_nombre, no chofer_id)
   onCleared() {
-    this.navigate({ fecha: null, chofer_nombre: null, estado: null, page: 1 });
+    this.navigate({estado: null, page: 1 });
   }
   onPage(e: PageEvent, q: any) {
     this.navigate({ ...q, page: e.pageIndex + 1 });

@@ -38,7 +38,7 @@ export class RecepcionPage {
   readonly ROWS = 5;
 
   fields: FilterField[] = [
-    { type: 'text', name: 'cd', label: 'CD' },
+    { type: 'text', name: 'cd', label: 'CD1,CD2,CD3,...' },
     { type: 'boolean', name: 'incidencias', label: 'Incidencias' }
   ];
 
@@ -109,7 +109,7 @@ export class RecepcionPage {
       this.navigate(params);
     }
   onCleared() {
-    this.navigate({ fecha: null, chofer_nombre: null, estado: null, page: 1 });
+    this.navigate({ cd: null, incidencias: null, page: 1 });
   }
 
   onPage(e: PageEvent, q: any) {
