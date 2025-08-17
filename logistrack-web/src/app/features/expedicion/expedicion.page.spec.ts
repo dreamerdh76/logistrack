@@ -58,7 +58,7 @@ describe('ExpedicionPage (standalone, zoneless)', () => {
     // Query inicial: filtros vacíos + ordering por defecto
     q$ = new BehaviorSubject(
       convertToParamMap({
-        chofer_id: '',
+        chofer: '',
         fecha: '',
         page: '1',
         ordering: '-fecha_despacho',
@@ -109,7 +109,7 @@ describe('ExpedicionPage (standalone, zoneless)', () => {
     expect(args.page_size).toBe(component.ROWS);
     expect(args.ordering).toBe('-fecha_despacho');
     // No deben viajar filtros cuando están vacíos
-    expect('chofer_id' in args).toBeFalse();
+    expect('chofer' in args).toBeFalse();
     expect('fecha' in args).toBeFalse();
 
     expect(loading.loading).toBeTrue();
@@ -136,13 +136,13 @@ describe('ExpedicionPage (standalone, zoneless)', () => {
   });
 
   it('onFilters aplica filtros (trim) y resetea page=1 preservando ordering (sin merge)', () => {
-    component.onFilters({ chofer_id: '  c-1  ', fecha: ' 2025-08-12 ' });
+    component.onFilters({ chofer: '  c-1  ', fecha: ' 2025-08-12 ' });
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParams: { chofer_id: 'c-1', fecha: '2025-08-12', page: 1, ordering: '-fecha_despacho' },
+        queryParams: { chofer: 'c-1', fecha: '2025-08-12', page: 1, ordering: '-fecha_despacho' },
       })
     );
   });
@@ -160,14 +160,14 @@ describe('ExpedicionPage (standalone, zoneless)', () => {
   });
 
   it('onPage navega a page (index + 1) manteniendo filtros y ordering', () => {
-    const q = { chofer_id: 'c-1', fecha: '2025-08-12' };
+    const q = { chofer: 'c-1', fecha: '2025-08-12' };
     component.onPage({ pageIndex: 3, pageSize: 5, length: 20 } as any, q); // → page 4
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParams: { chofer_id: 'c-1', fecha: '2025-08-12', page: 4, ordering: '-fecha_despacho' },
+        queryParams: { chofer: 'c-1', fecha: '2025-08-12', page: 4, ordering: '-fecha_despacho' },
       })
     );
   });
