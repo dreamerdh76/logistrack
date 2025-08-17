@@ -12,7 +12,7 @@ import { ReadApi } from '../read-api.service';
 import { Orden, Page as P } from '../../shared/types/read-model';
 
 type Vm = {
-  q: { chofer_id?: string; fecha?: string };
+  q: { chofer?: string; fecha?: string };
   page: number;
   ordering: string;
   sortField: string | null;
@@ -46,7 +46,7 @@ export class ExpedicionPage {
 
   // Filtros visibles
   fields: FilterField[] = [
-    { type: 'text', name: 'chofer_id', label: 'Chofer (ID)' },
+    { type: 'text', name: 'chofer', label: 'Chofer' },
     { type: 'date', name: 'fecha',     label: 'Fecha (YYYY-MM-DD)' },
   ];
 
@@ -76,8 +76,8 @@ export class ExpedicionPage {
       const page = Number.isFinite(raw) && raw > 0 ? raw : 1;
 
       const q: Vm['q'] = {};
-      const chofer_id = qp.get('chofer_id');
-      if (chofer_id && chofer_id.trim() !== '') q.chofer_id = chofer_id.trim();
+      const chofer = qp.get('chofer');
+      if (chofer && chofer.trim() !== '') q.chofer = chofer.trim();
 
       const fecha = qp.get('fecha');
       if (fecha && fecha.trim() !== '') q.fecha = fecha.trim();

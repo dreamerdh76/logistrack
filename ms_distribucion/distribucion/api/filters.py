@@ -46,11 +46,11 @@ class PreparacionOrdenFilter(RangoFechaMixin, df.FilterSet):
 
 # Expedición (ordenes con chofer asignado)
 class ExpedicionOrdenFilter(df.FilterSet):
-    chofer_id = df.CharFilter(field_name="chofer_id", lookup_expr="exact")
+    chofer = df.CharFilter(field_name="chofer__nombre", lookup_expr="icontains")
     fecha = df.DateFilter(method="por_dia")
     class Meta:
         model = Orden
-        fields = ("chofer_id","fecha")
+        fields = ("chofer","fecha")
     def por_dia(self, qs, name, value):
         start = datetime.combine(value, datetime.min.time(), tzinfo=timezone.get_current_timezone())
         end   = start + timedelta(days=1)
