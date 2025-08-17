@@ -2,28 +2,58 @@
 
 ## Servicios
 
-- **mysql** (`mysql:8`)
+- **mysql** (`mysql:8`)  
   BD `distribucion` (usuario `root`, pass `12345678`).
 
-- **redis** (`redis:7-alpine`)
+- **redis** (`redis:7-alpine`)  
   Broker para eventos (Streams).
 
-- **ms_distribucion** (Django + Gunicorn, `:8000`)
+- **ms_distribucion** (Django + Gunicorn, `:8000`)  
   En el arranque ejecuta en **el mismo contenedor**:
   1) `python manage.py migrate --noinput`  
-  2) `python manage.py shell -c 'from distribucion.factory import run; run()'` *(si lo definiste en `command`)*  
+  2) `python manage.py shell -c 'from distribucion.factory import run; run()'`  
   3) `gunicorn ms_distribucion.wsgi:application -b 0.0.0.0:8000 -w 3 --timeout 120`
 
   Monta contratos en `/contracts/schemas` (solo lectura).
 
-- **ms_distribucion_worker** (Django)
+- **ms_distribucion_worker** (Django)  
   Ejecuta `python manage.py consume_distribucion` para procesar eventos desde Redis.
 
-- **logistrack_web** (Angular, `:4200`)
+- **logistrack_web** (Angular, `:4200`)  
   UI en desarrollo (Tailwind). CORS hacia `http://localhost:4200`.
 
-- **symfony_cli** (PHP CLI)
+- **symfony_cli** (PHP CLI)  
   Sin servidor web. Para correr `php bin/console ...` que **publica eventos en Redis**.
+
+---
+
+## Preparación
+
+```bash
+# 1) Clonar el repositorio
+git clone <URL_DEL_REPO> logistrack
+cd logistrack
+
+# 2) Crear un .env vacío en ms_distribucion (DEJARLO EN BLANCO)
+touch ms_distribucion/.env
+# (alternativa) : > ms_distribucion/.env  # crea/limpia el archivo
+```
+
+> El `.env` vacío permite que Django lea las variables de entorno que define Docker Compose sin sobreescribirlas.
+
+---
+
+## Puesta en marcha
+
+```bash
+# Construir e iniciar
+docker compose up -d --build
+
+# Verificar
+docker compose ps
+# Swagger: http://localhost:8000/schema/swagger-ui/
+# Angular: http://localhost:4200
+```
 
 ---
 
@@ -47,18 +77,6 @@ Prefijo de negocio: `/api/v1/`
 
 ---
 
-## Puesta en marcha
-
-```bash
-# Construir e iniciar
-docker compose up -d --build
-
-# Verificar
-docker compose ps
-# Swagger: http://localhost:8000/schema/swagger-ui/
-# Angular: http://localhost:4200
-```
-
 ## Publicar 30 eventos “BloqueConsolidadoListo” (PHP → Redis)
 
 Ejecuta el comando en **symfony_cli** para publicar 30 eventos en el stream configurado:
@@ -66,6 +84,7 @@ Ejecuta el comando en **symfony_cli** para publicar 30 eventos en el stream conf
 ```bash
 # Contenedor ya corriendo
 docker compose exec symfony_cli php bin/console app:seed-events
+```
 
 > Revisa que en `symfony_cli` estén definidos, como mínimo:  
 > `REDIS_DSN=redis://redis:6379` y `REDIS_STREAM=distribucion.bloques`.  
@@ -82,18 +101,20 @@ docker compose logs -f ms_distribucion_worker
 # Escalar workers
 docker compose up -d --scale ms_distribucion_worker=3
 
-# Migraciones manuales
+# Migraciones manuales (Django)
 docker compose exec ms_distribucion python manage.py migrate --noinput
 
 # Seed manual (Django factory)
-docker compose exec ms_distribucion   python manage.py shell -c "from distribucion.factory import run; run()"
+docker compose exec ms_distribucion python manage.py shell -c "from distribucion.factory import run; run()"
 ```
 
 ---
 
 ## Contratos
 
-- Montados como solo lectura en Django: `./logistrack-contracts/schemas:/contracts/schemas:ro`
+- Montados como solo lectura en Django:  
+  `./logistrack-contracts/schemas:/contracts/schemas:ro`
+
 - Variables (Django):
   - `LOGISTRACK_CONTRACTS_DIR=/contracts/schemas`
   - (Compat) `CONTRACTS_DIR=/contracts/schemas`
