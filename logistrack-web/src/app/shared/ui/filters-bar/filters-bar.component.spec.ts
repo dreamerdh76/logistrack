@@ -1,6 +1,6 @@
 // src/app/shared/ui/filters-bar/filters-bar.component.spec.ts
 import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
+import { provideZonelessChangeDetection, PLATFORM_ID } from '@angular/core';
 import { FiltersBarComponent, FilterField } from './filters-bar.component';
 
 describe('FiltersBarComponent (standalone, zoneless)', () => {
@@ -18,7 +18,10 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [FiltersBarComponent],
-      providers: [provideZonelessChangeDetection()],
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: PLATFORM_ID, useValue: 'browser' }, // SSR-safe en tests
+      ],
     }).compileComponents();
 
     component = TestBed.createComponent(FiltersBarComponent).componentInstance;
@@ -49,11 +52,11 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
     expect(v.incidencias).toBeTrue();
   });
 
-  it('autoApply emite change con valor limpio (trim/boolean/date)', (done) => {
+  it('autoApply emite filtersChange con valor limpio (trim/boolean/date)', (done) => {
     component.autoApply = true;
     initWith();
 
-    component.change.subscribe(e => {
+    component.filtersChange.subscribe(e => {
       expect(e).toEqual({
         cd: 'CD-01',
         estado: 'PEN',
@@ -74,7 +77,7 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
     initWith();
 
     let last: any | null = null;
-    component.change.subscribe(v => (last = v));
+    component.filtersChange.subscribe(v => (last = v));
 
     component.form.get('cd')!.setValue('X'); // no emite
     expect(last).toBeNull();
@@ -83,13 +86,13 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
     expect(last).toEqual({ cd: 'X' });
   });
 
-  it('clear() resetea, emite cleared y change {}', () => {
+  it('clear() resetea, emite cleared y luego filtersChange {}', () => {
     component.autoApply = false;
     initWith({ cd: 'CD9', estado: 'ENT', fecha: '2025-12-31', incidencias: false });
 
     const changes: any[] = [];
     let cleared = 0;
-    component.change.subscribe(v => changes.push(v));
+    component.filtersChange.subscribe(v => changes.push(v));
     component.cleared.subscribe(() => cleared++);
 
     component.clear();
@@ -98,9 +101,9 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
     expect(changes.pop()).toEqual({});
 
     const v = component.form.getRawValue();
-    expect(v.cd).toBe('');
-    expect(v.estado).toBe('');
-    expect(v.incidencias).toBe('');
+    expect(v.cd).toBeNull();
+    expect(v.estado).toBeNull();
+    expect(v.incidencias).toBeNull();
     expect(v.fecha).toBeNull();
   });
 
@@ -124,7 +127,7 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
     initWith();
 
     let last: any | null = null;
-    component.change.subscribe(v => (last = v));
+    component.filtersChange.subscribe(v => (last = v));
 
     component.form.get('incidencias')!.setValue('true'); // string
     component.apply();
@@ -133,7 +136,7 @@ describe('FiltersBarComponent (standalone, zoneless)', () => {
   });
 
   it('trackField devuelve el name del field', () => {
-    expect(component.trackField(0, fields[2]!)).toBe('fecha'); // ¡ojo al "!"
+    expect(component.trackField(0, fields[2]!)).toBe('fecha');
   });
 
   it('ngOnDestroy desuscribe sin errores', () => {

@@ -6,11 +6,11 @@
     <div class="bg-gray-50 rounded-2xl shadow-sm p-4">
       <!-- ✅ solo cd y pyme_id -->
       <app-filters-bar
-        [fields]="fields"
-        [value]="{ cd: vm.q.cd, pyme: vm.q.pyme }"
-        [autoApply]="true"
-        (change)="onFilters($event)"
-        (cleared)="onCleared()">
+      [fields]="fields"
+      [value]="vm.q"
+      [autoApply]="true"
+      (filtersChange)="onFilters($event)"
+      (cleared)="onCleared()">
       </app-filters-bar>
     </div>
 
@@ -32,7 +32,7 @@
         [value]="vm.data"
         [totalRecords]="vm.count"
         [rows]="ROWS"
-        [first]="firstOf(vm.q.page)"
+        [first]="firstOf(vm.page)"
         [loading]="vm.loading"
         (page)="onPage($event, vm.q)">
       </app-table>

@@ -13,6 +13,19 @@ import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { NoAutofocusDirective } from '../../shared/directives/no-autofocus.directive';
 
+type Vm = {
+  q: { fecha?: string; chofer_nombre?: string; estado?: 'COM' | 'INC' };
+  page: number;
+  data: BloqueList[];
+  count: number;
+  loading: boolean;
+  error: any | null;
+};
+
+const toVm = (q: Vm['q'], page: number, patch: Partial<Vm> = {}): Vm => ({
+  q, page, data: [], count: 0, loading: false, error: null, ...patch,
+});
+
 @Component({
   standalone: true,
   selector: 'app-consolidacion',
@@ -24,7 +37,7 @@ import { NoAutofocusDirective } from '../../shared/directives/no-autofocus.direc
     ErrorStateComponent,
     ButtonModule,
     TooltipModule,
-    NoAutofocusDirective
+    NoAutofocusDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './consolidacion.page.html',
@@ -33,122 +46,124 @@ export class ConsolidacionPage {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private api = inject(ReadApi);
+  private lastParamsJson = '';
 
   readonly ROWS = 5;
 
-  // Filtros (el FiltersBar aplicará [appendTo]="'self'" y panelStyleClass 'overlay-mobile' internamente)
+  // Filtros visibles
   fields: FilterField[] = [
     { type: 'date',  name: 'fecha',          label: 'Fecha (YYYY-MM-DD)' },
     { type: 'text',  name: 'chofer_nombre',  label: 'Chofer' },
     { type: 'select',name: 'estado',         label: 'Estado',
       options: [
         { value: 'COM', label: 'Completo' },
-        { value: 'INC', label: 'Incompleto' }
-      ]
+        { value: 'INC', label: 'Incompleto' },
+      ],
     },
   ];
 
-  // Columnas (el TableComponent ya inserta <span class="p-column-title"> en móvil)
+  // Columnas
   columns: TableColumn<BloqueList>[] = [
-    {
-      field: 'id',
-      header: 'ID',
-      headerClass: 'w-20',
-      bodyClass: 'tabular-nums'
-    },
+    { field: 'id', header: 'ID', headerClass: 'w-20', bodyClass: 'tabular-nums' },
     {
       field: 'fecha',
       header: 'Fecha',
-      // Render legible; evita usar pipes si tu modelo trae ISO/number
       template: (r: BloqueList) => new Date(r.fecha as any).toLocaleString(),
-      headerClass: 'min-w-[9rem]'
+      headerClass: 'min-w-[9rem]',
     },
-    {
-      field: 'chofer_nombre',
-      header: 'Chofer',
-      headerClass: 'min-w-[9rem]'
-    },
-    {
-      field: 'total_ordenes',
-      header: 'Órdenes',
-      headerClass:'col-orders',
-      bodyClass:'tabular-nums',
-      colClass: 'col-orders'
-    },
+    { field: 'chofer_nombre', header: 'Chofer', headerClass: 'min-w-[9rem]' },
+    { field: 'total_ordenes', header: 'Órdenes', headerClass:'col-orders', bodyClass:'tabular-nums', colClass: 'col-orders' },
     {
       field: 'estado_completitud',
       header: 'Estado',
       template: (r: BloqueList) => r.estado_completitud,
       colClass:'col-status',
       headerClass:'col-status',
-      // Colorea según estado
-      bodyClass:(r)=> 'col-status ' + (r.estado_completitud==='INC' ? 'text-red-600 font-medium'
-                                  : r.estado_completitud==='COM' ? 'text-green-600 font-medium' : '')
+      bodyClass: (r) =>
+        'col-status ' +
+        (r.estado_completitud === 'INC'
+          ? 'text-red-600 font-medium'
+          : r.estado_completitud === 'COM'
+          ? 'text-green-600 font-medium'
+          : ''),
     },
   ];
 
+  // Estado desde QueryParams
   vm$ = this.route.queryParamMap.pipe(
-    map(q => {
-      const raw = Number(q.get('page'));
+    map(qp => {
+      const raw = Number(qp.get('page'));
       const page = Number.isFinite(raw) && raw > 0 ? raw : 1;
-      return {
-        fecha: q.get('fecha') || '',
-        chofer_nombre: q.get('chofer_nombre') || '',
-        estado: q.get('estado') || '',
-        page,
-      };
+
+      const q: Vm['q'] = {};
+      const fecha = qp.get('fecha');
+      if (fecha && fecha.trim() !== '') q.fecha = fecha.trim();
+      const chofer = qp.get('chofer_nombre');
+      if (chofer && chofer.trim() !== '') q.chofer_nombre = chofer.trim();
+      const estado = qp.get('estado');
+      if (estado && estado.trim() !== '') q.estado = estado.trim() as Vm['q']['estado'];
+
+      return { q, page };
     }),
-    switchMap(q =>
-      this.api.consolidacion({
-        fecha: q.fecha || undefined,
-        chofer_nombre: q.chofer_nombre || undefined,
-        estado: (q.estado as any) || undefined,
-        page: q.page,
-      }).pipe(
-        map((p: P<BloqueList>) => ({ q, data: p.results, count: p.count, loading: false, error: null })),
-        startWith({ q, data: [] as BloqueList[], count: 0, loading: true, error: null }),
-        catchError(err => of({ q, data: [], count: 0, loading: false, error: err })),
+    switchMap(({ q, page }) =>
+      this.api.consolidacion({ ...q, page, page_size: this.ROWS }).pipe(
+        map((p: P<BloqueList>) => toVm(q, page, { data: p.results, count: p.count })),
+        startWith(toVm(q, page, { loading: true })),
+        catchError(err => of(toVm(q, page, { error: err }))),
       )
-    )
+    ),
   );
 
-  // Navegación (merge de query params)
+  // Filtros
+  onFilters(v: Record<string, any>) {
+    if (v && typeof v === 'object' && 'isTrusted' in v) return; // evita '?isTrusted=true'
+    const params = this.cleanParams({ ...v, page: 1 });
+    this.navigate(params);
+  }
+  onCleared() {
+    this.navigate({ page: 1 }); // limpia totalmente los filtros en la URL
+  }
+
+  // Paginación (evento de <app-table>)
+  onPage(e: { pageIndex: number; pageSize: number; length?: number }, q: Vm['q']) {
+    const nextPage = (e?.pageIndex ?? 0) + 1;
+    this.navigate({ ...q, page: nextPage });
+  }
+
+  // Navegación (sin merge + de-dupe)
   private navigate(params: any) {
+    const next = JSON.stringify(params);
+    if (next === this.lastParamsJson) return;
+    this.lastParamsJson = next;
+
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: params,
-      queryParamsHandling: 'merge'
     });
   }
 
-  // Al aplicar filtros desde la barra
-  onFilters(v: Record<string, any>) {
-    const params: any = { page: 1 }; // resetea a la primera página
-    for (const f of this.fields) {
-      const val = Object.prototype.hasOwnProperty.call(v, f.name) ? v[f.name] : null;
-      params[f.name] = (val === '' || val == null) ? null : val;
-    }
-    this.navigate(params);
-  }
-
-  // Limpiar filtros (ojo: chofer_nombre, no chofer_id)
-  onCleared() {
-    this.navigate({ fecha: null, chofer_nombre: null, estado: null, page: 1 });
-  }
-
-  // PageEvent-like del TableComponent
-  onPage(e: { pageIndex: number; pageSize: number }, q: any) {
-    this.navigate({ ...q, page: e.pageIndex + 1 });
-  }
-
-  // Util para paginador Prime table
+  // Helpers
   firstOf(page?: number) {
-    const p = Number(page) || 1;
-    return Math.max(0, (p - 1) * this.ROWS);
+    const p = Number(page);
+    return Number.isFinite(p) && p > 0 ? (p - 1) * this.ROWS : 0;
   }
 
-  // Detalle
   gotoDetail(id: string) {
     this.router.navigate(['/consolidacion', String(id)]);
+  }
+
+  private cleanParams(obj: Record<string, any>) {
+    const out: any = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v == null) continue;
+      if (typeof v === 'string') {
+        const t = v.trim();
+        if (t === '') continue;
+        out[k] = t;
+      } else {
+        out[k] = v;
+      }
+    }
+    return out;
   }
 }

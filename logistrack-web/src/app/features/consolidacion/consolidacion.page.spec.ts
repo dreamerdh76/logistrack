@@ -8,6 +8,7 @@ import { ConsolidacionPage } from './consolidacion.page';
 import { ReadApi } from '../read-api.service';
 import { BloqueList, Page } from '../../shared/types/read-model';
 
+/* ------------ Mock API ------------ */
 class MockReadApi {
   consolidacion = jasmine.createSpy('consolidacion').and.returnValue(
     of<Page<BloqueList>>({
@@ -32,16 +33,18 @@ class MockReadApi {
 describe('ConsolidacionPage (standalone, zoneless)', () => {
   let component: ConsolidacionPage;
   let router: jasmine.SpyObj<Router>;
-  let route$: BehaviorSubject<any>;
+  let api: MockReadApi;
+  let q$: BehaviorSubject<any>;
   let routeStub: any;
 
   beforeEach(async () => {
-    route$ = new BehaviorSubject(
+    // filtros vacíos -> no deben viajar a la API
+    q$ = new BehaviorSubject(
       convertToParamMap({ page: '1', fecha: '', chofer_nombre: '', estado: '' })
     );
     routeStub = {
-      queryParamMap: route$.asObservable(),
-      snapshot: { queryParamMap: route$.value },
+      queryParamMap: q$.asObservable(),
+      snapshot: { queryParamMap: q$.value },
     };
 
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
@@ -52,11 +55,12 @@ describe('ConsolidacionPage (standalone, zoneless)', () => {
       providers: [
         provideZonelessChangeDetection(),
         { provide: ActivatedRoute, useValue: routeStub },
-        { provide: ReadApi, useClass: MockReadApi },
         { provide: Router, useValue: router },
+        { provide: ReadApi, useClass: MockReadApi },
       ],
     }).compileComponents();
 
+    api = TestBed.inject(ReadApi) as unknown as MockReadApi;
     component = TestBed.createComponent(ConsolidacionPage).componentInstance;
   });
 
@@ -64,73 +68,66 @@ describe('ConsolidacionPage (standalone, zoneless)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('vm$ emite loading y luego datos (sin fakeAsync)', async () => {
-    type VM = {
-      q: { fecha: string; chofer_nombre: string; estado: string; page: number };
-      data: BloqueList[]; count: number; loading: boolean; error: any;
-    };
+  it('vm$ emite loading y luego datos; la API recibe page y page_size (sin filtros vacíos)', async () => {
+    type VM = { q: any; page: number; data: BloqueList[]; count: number; loading: boolean; error: any };
 
-    const [loading, ready] = await firstValueFrom(
-      component.vm$.pipe(take(2), toArray())
-    ) as [VM, VM];
+    const emissions = await firstValueFrom(component.vm$.pipe(take(2), toArray()));
+    expect(emissions.length).toBe(2);
+
+    const loading = emissions[0] as VM;
+    const ready   = emissions[1] as VM;
+
+    expect(api.consolidacion).toHaveBeenCalled();
+    const args = api.consolidacion.calls.mostRecent().args[0] as any;
+    expect(args.page).toBe(1);
+    expect(args.page_size).toBe(component.ROWS);
+    // no enviar filtros vacíos
+    expect('fecha' in args).toBeFalse();
+    expect('chofer_nombre' in args).toBeFalse();
+    expect('estado' in args).toBeFalse();
 
     expect(loading.loading).toBeTrue();
     expect(ready.loading).toBeFalse();
     expect(ready.count).toBe(1);
+    expect(ready.page).toBe(1);
     expect(ready.data.length).toBe(1);
   });
 
-  it('onFilters aplica filtros y resetea page=1', () => {
-    component.onFilters({ fecha: '2025-08-12', chofer_nombre: 'Luis', estado: '' });
+  it('onFilters aplica filtros (trim) y resetea page=1 (sin merge)', () => {
+    component.onFilters({ fecha: ' 2025-08-12 ', chofer_nombre: '  Luis ', estado: '' });
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: {
-          page: 1,
-          fecha: '2025-08-12',
-          chofer_nombre: 'Luis',
-          estado: null,
-        },
+        queryParams: { fecha: '2025-08-12', chofer_nombre: 'Luis', page: 1 }, // estado vacío no viaja
       })
     );
   });
 
-  it('onCleared limpia filtros y page=1', () => {
+  it('onCleared limpia filtros y deja solo page=1 (sin merge)', () => {
     component.onCleared();
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: {
-          fecha: null,
-          chofer_nombre: null,
-          estado: null,
-          page: 1,
-        },
+        queryParams: { page: 1 },
       })
     );
   });
 
-  it('onPage navega a page (index + 1) manteniendo query', () => {
-    const q = { fecha: '2025-08-10', chofer_nombre: 'Ana', estado: 'COM', page: 1 };
+  it('onPage navega a page (index + 1) manteniendo filtros actuales', () => {
+    // 👇 TIPADO CORRECTO: estado como literal
+    const q = { fecha: '2025-08-10', chofer_nombre: 'Ana', estado: 'COM' as const };
+
     component.onPage({ pageIndex: 2, pageSize: 5 }, q); // -> page 3
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: {
-          fecha: '2025-08-10',
-          chofer_nombre: 'Ana',
-          estado: 'COM',
-          page: 3,
-        },
+        queryParams: { fecha: '2025-08-10', chofer_nombre: 'Ana', estado: 'COM', page: 3 },
       })
     );
   });

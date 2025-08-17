@@ -4,38 +4,37 @@
   <div class="bg-gray-50 rounded-2xl shadow-sm p-4">
     <app-filters-bar
       [fields]="fields"
-      [value]="{ estado: vm.q.estado}"
-      (change)="onFilters($event)"
-      (cleared)="onCleared()"
-    />
+      [value]="vm.q"
+      [autoApply]="true"
+      (filtersChange)="onFilters($event)"
+      (cleared)="onCleared()">
+    </app-filters-bar>
   </div>
-
 
   <app-error-state
     *ngIf="vm.error"
     [message]="'No se pudo cargar las órdenes.'"
-    (retry)="onFilters(vm.q)"
-  ></app-error-state>
+    (retry)="onFilters(vm.q)">
+  </app-error-state>
 
   <app-empty-state
     *ngIf="!vm.error && !vm.loading && vm.count === 0"
     title="Sin órdenes"
-    subtitle="Ajusta los filtros e inténtalo nuevamente."
-  ></app-empty-state>
+    subtitle="Ajusta los filtros e inténtalo nuevamente.">
+  </app-empty-state>
 
   <div *ngIf="!vm.error && vm.count > 0" class="bg-gray-50 rounded-2xl shadow-sm p-2">
     <app-table
-      *ngIf="!vm.error && vm.count > 0"
       [columns]="columns"
       [data]="vm.data"
       [loading]="vm.loading"
       [length]="vm.count"
       [rows]="ROWS"
-      [first]="firstOf(vm.q.page)"
-      [pageIndex]="vm.q.page - 1"
-      (page)="onPage($event, vm.q)"
-    >
+      [pageIndex]="vm.page - 1"
+      [first]="firstOf(vm.page)"
+      [sortField]="vm.sortField"
+      [sortOrder]="vm.sortOrder"
+      (page)="onPage($event, vm.q)">
     </app-table>
   </div>
-
 </section>

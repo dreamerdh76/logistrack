@@ -1,43 +1,52 @@
-<!-- consolidacion.page.html -->
-<section class="px-4 py-4">
-  <div class="mx-auto max-w-6xl space-y-4" *ngIf="vm$ | async as vm">
+<section class="px-4 py-4" *ngIf="vm$ | async as vm">
+  <div class="mx-auto max-w-6xl space-y-4">
     <h2 class="text-2xl font-semibold">Consolidación</h2>
 
-    <div  appNoAutofocus class="bg-gray-50 rounded-2xl p-4 shadow-sm">
+    <div appNoAutofocus class="bg-gray-50 rounded-2xl p-4 shadow-sm">
       <app-filters-bar
         [fields]="fields"
-        [value]="{ fecha: vm.q.fecha, chofer_nombre: vm.q.chofer_nombre, estado: vm.q.estado }"
+        [value]="vm.q"
         [autoApply]="true"
-        (change)="onFilters($event)"
+        (filtersChange)="onFilters($event)"
         (cleared)="onCleared()">
-
       </app-filters-bar>
     </div>
 
-    <app-error-state *ngIf="vm.error" message="No se pudo cargar." (retry)="onFilters(vm.q)"></app-error-state>
-    <app-empty-state *ngIf="!vm.error && !vm.loading && vm.count === 0" title="Sin bloques" subtitle="No hay resultados."></app-empty-state>
+    <app-error-state
+      *ngIf="vm.error"
+      message="No se pudo cargar."
+      (retry)="onFilters(vm.q)">
+    </app-error-state>
+
+    <app-empty-state
+      *ngIf="!vm.error && !vm.loading && vm.count === 0"
+      title="Sin bloques"
+      subtitle="No hay resultados.">
+    </app-empty-state>
 
     <div *ngIf="!vm.error && vm.count > 0" class="bg-gray-50 rounded-2xl p-2 shadow-sm">
       <app-table
-        class="block pro-table"
         [columns]="columns"
         [value]="vm.data"
         [totalRecords]="vm.count"
         [rows]="ROWS"
-        [first]="firstOf(vm.q.page)"
+        [first]="firstOf(vm.page)"
+        [loading]="vm.loading"
         [showActions]="true"
         (page)="onPage($event, vm.q)">
-          <ng-template #actionTemplate let-row>
-            <button pButton
-                    [text]="true"
-                    icon="pi pi-arrow-right"
-                    (click)="gotoDetail(row.id)"
-                    [pTooltip]="'Ver bloque ' + row.id"
-                    tooltipPosition="top"
-                    showDelay="150">
 
-                  </button>
-          </ng-template>
+        <ng-template #actionTemplate let-row>
+          <button
+            pButton
+            [text]="true"
+            icon="pi pi-arrow-right"
+            (click)="gotoDetail(row.id)"
+            [pTooltip]="'Ver bloque ' + row.id"
+            tooltipPosition="top"
+            showDelay="150">
+          </button>
+        </ng-template>
+
       </app-table>
     </div>
   </div>

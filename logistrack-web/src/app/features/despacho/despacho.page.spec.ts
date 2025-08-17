@@ -42,9 +42,8 @@ describe('DespachoPage (standalone, zoneless)', () => {
   let routeStub: any;
 
   beforeEach(async () => {
-    q$ = new BehaviorSubject(
-      convertToParamMap({ page: '1', cd: '', pyme: '' })
-    );
+    // puedes dejar cd/pyme vacíos; el componente los ignora
+    q$ = new BehaviorSubject(convertToParamMap({ page: '1', cd: '', pyme: '' }));
     routeStub = {
       queryParamMap: q$.asObservable(),
       snapshot: { queryParamMap: q$.value },
@@ -71,52 +70,63 @@ describe('DespachoPage (standalone, zoneless)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('vm$ emite loading y luego datos (sin Zone/fakeAsync)', async () => {
+  it('vm$ emite loading y luego datos; API recibe page y page_size cuando no hay filtros', async () => {
     type VM = {
-      q: { cd: string; pyme: string; page: number };
-      data: Orden[]; count: number; loading: boolean; error: any;
+      q: any;
+      page: number;
+      data: Orden[];
+      count: number;
+      loading: boolean;
+      error: any;
     };
 
     const [loading, ready] = await firstValueFrom(
       component.vm$.pipe(take(2), toArray())
     ) as [VM, VM];
 
-    expect(api.despacho).toHaveBeenCalledWith({ cd: undefined, pyme: undefined, page: 1 });
+    expect(api.despacho).toHaveBeenCalled();
+    const args = api.despacho.calls.mostRecent().args[0] as any;
+    expect(args.page).toBe(1);
+    expect(args.page_size).toBe(component.ROWS);
+    // No deben existir claves de filtros cuando están vacías
+    expect('cd' in args).toBeFalse();
+    expect('pyme' in args).toBeFalse();
+
+    // page debe preservarse en ambos estados
+    expect(loading.page).toBe(1);
+    expect(ready.page).toBe(1);
+
     expect(loading.loading).toBeTrue();
     expect(ready.loading).toBeFalse();
     expect(ready.count).toBe(1);
     expect(ready.data.length).toBe(1);
   });
 
-  it('onFilters aplica cd/pyme y resetea page=1', () => {
-    component.onFilters({ cd: 'CD1', pyme: 'P-ACME' });
+  it('onFilters aplica cd/pyme (trim) y resetea page=1', () => {
+    component.onFilters({ cd: '  CD1  ', pyme: 'P-ACME' });
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
         queryParams: { cd: 'CD1', pyme: 'P-ACME', page: 1 },
       })
     );
   });
 
-  it('onCleared limpia filtros y page=1', () => {
+  it('onCleared elimina filtros y deja solo page=1', () => {
     component.onCleared();
 
-    // Nota: si este test falla porque el código usa `pyme_id`,
-    // corrige `onCleared()` para usar `pyme: null`
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: { cd: null, pyme: null, page: 1 },
+        queryParams: { page: 1 },
       })
     );
   });
 
-  it('onPage navega a page (index + 1) manteniendo query', () => {
+  it('onPage navega a page (index + 1) manteniendo filtros actuales', () => {
     const q = { cd: 'CD2', pyme: 'P-1', page: 1 };
     component.onPage({ pageIndex: 3, pageSize: 5 }, q); // -> page 4
 
@@ -124,7 +134,6 @@ describe('DespachoPage (standalone, zoneless)', () => {
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
         queryParams: { cd: 'CD2', pyme: 'P-1', page: 4 },
       })
     );

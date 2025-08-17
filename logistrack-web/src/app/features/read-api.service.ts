@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 import { HttpService } from '../core/http/http.service';
 import {
   Page,
@@ -13,7 +13,16 @@ import {
   EstadoDistrib,
 } from '../shared/types/read-model';
 
+// Index genérico para componer la key del caché
 type Q = Record<string, string | number | boolean | undefined>;
+
+// 👇 Tipo base reutilizable para query string
+type Paging = {
+  page?: number;
+  page_size?: number;   // ✅ ya permitido en todos los endpoints que lo usen
+  ordering?: string;    // ✅ opcional si necesitas ordenamiento
+};
+type WithPaging<T> = T & Paging;
 
 @Injectable({ providedIn: 'root' })
 export class ReadApi {
@@ -24,6 +33,7 @@ export class ReadApi {
   private key(path: string, q?: Q) {
     return path + '::' + JSON.stringify(q ?? {});
   }
+
   private getCached<T>(path: string, q?: Q): Observable<T> {
     const k = this.key(path, q);
     if (!this.cache.has(k)) {
@@ -32,54 +42,31 @@ export class ReadApi {
     }
     return this.cache.get(k)! as Observable<T>;
   }
+
   clearCache(prefix?: string) {
     if (!prefix) return this.cache.clear();
-    [...this.cache.keys()].forEach(
-      (k) => k.startsWith(prefix) && this.cache.delete(k),
-    );
+    [...this.cache.keys()].forEach(k => k.startsWith(prefix) && this.cache.delete(k));
   }
 
   // --- endpoints ---
 
-  despacho(q: {
-    cd?: string;
-    pyme?: string;
-    page?: number;
-  }): Observable<Page<Orden>> {
+  despacho(q: WithPaging<{ cd?: string; pyme?: string }>): Observable<Page<Orden>> {
     return this.getCached<Page<Orden>>('/despacho/ordenes', q);
   }
 
-  preparacion(q: {
-    estado?: EstadoPrep;
-    desde?: string;
-    hasta?: string;
-    page?: number;
-  }): Observable<Page<Orden>> {
+  preparacion(q: WithPaging<{ estado?: EstadoPrep; desde?: string; hasta?: string }>): Observable<Page<Orden>> {
     return this.getCached<Page<Orden>>('/preparacion/ordenes', q);
   }
 
-  expedicion(q: {
-    chofer_id?: string;
-    fecha?: string;
-    page?: number;
-  }): Observable<Page<Orden>> {
+  expedicion(q: WithPaging<{ chofer_id?: string; fecha?: string }>): Observable<Page<Orden>> {
     return this.getCached<Page<Orden>>('/expedicion/ordenes', q);
   }
 
-  recepcion(q: {
-    cd?: string;
-    incidencias?: boolean;
-    page?: number;
-  }): Observable<Page<Recepcion>> {
+  recepcion(q: WithPaging<{ cd?: string; incidencias?: boolean }>): Observable<Page<Recepcion>> {
     return this.getCached<Page<Recepcion>>('/recepcion/ordenes', q);
   }
 
-  consolidacion(q: {
-    fecha?: string;
-    chofer_nombre?: string;
-    estado?: EstadoBloque;
-    page?: number;
-  }): Observable<Page<BloqueList>> {
+  consolidacion(q: WithPaging<{ fecha?: string; chofer_nombre?: string; estado?: EstadoBloque }>): Observable<Page<BloqueList>> {
     return this.getCached<Page<BloqueList>>('/consolidacion/bloques', q);
   }
 
@@ -87,10 +74,7 @@ export class ReadApi {
     return this.getCached<BloqueDetail>(`/consolidacion/bloques/${id}`);
   }
 
-  distribucion(q: {
-    estado?: EstadoDistrib;
-    page?: number;
-  }): Observable<Page<Distribucion>> {
+  distribucion(q: WithPaging<{ estado?: EstadoDistrib }>): Observable<Page<Distribucion>> {
     return this.getCached<Page<Distribucion>>('/distribucion/ordenes', q);
   }
 }

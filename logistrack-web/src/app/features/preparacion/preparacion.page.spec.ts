@@ -1,19 +1,7 @@
 // src/app/features/preparacion/preparacion.page.spec.ts
 import { TestBed } from '@angular/core/testing';
-import {
-  ActivatedRoute,
-  Router,
-  convertToParamMap,
-  NavigationExtras,
-} from '@angular/router';
-import {
-  BehaviorSubject,
-  firstValueFrom,
-  of,
-  take,
-  toArray,
-  throwError,
-} from 'rxjs';
+import { ActivatedRoute, Router, convertToParamMap, NavigationExtras } from '@angular/router';
+import { BehaviorSubject, firstValueFrom, of, take, toArray, throwError } from 'rxjs';
 import { provideZonelessChangeDetection } from '@angular/core';
 
 import { PreparacionPage } from './preparacion.page';
@@ -100,80 +88,79 @@ describe('PreparacionPage (standalone, zoneless)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('vm$ emite loading y luego datos (mantiene ordering)', async () => {
-    type VM = { q: any; data: Orden[]; count: number; loading: boolean; error: any };
+  it('vm$ emite loading y luego datos; la API recibe page, page_size y ordering (sin estado vacío)', async () => {
+    type VM = {
+      q: any; page: number; ordering: string;
+      data: Orden[]; count: number; loading: boolean; error: any;
+      sortField: string | null; sortOrder: 1 | -1 | 0;
+    };
 
-    const emissions = await firstValueFrom(
-      component.vm$.pipe(take(2), toArray())
-    );
-    const [loading, ready] = emissions as [VM, VM];
+    const emissions = await firstValueFrom(component.vm$.pipe(take(2), toArray()));
+    const loading = emissions[0] as VM;
+    const ready   = emissions[1] as VM;
+
+    expect(api.preparacion).toHaveBeenCalled();
+    const args = api.preparacion.calls.mostRecent().args[0] as any;
+    expect(args.page).toBe(1);
+    expect(args.page_size).toBe(component.ROWS);
+    expect(args.ordering).toBe('-fecha_despacho');
+    expect('estado' in args).toBeFalse(); // no enviar filtro vacío
 
     expect(loading.loading).toBeTrue();
     expect(ready.loading).toBeFalse();
     expect(ready.count).toBe(2);
-    expect(ready.q.ordering).toBe('-fecha_despacho');
+    expect(ready.page).toBe(1);
+    expect(ready.ordering).toBe('-fecha_despacho');
+    expect(ready.sortField).toBe('fecha_despacho');
+    expect(ready.sortOrder).toBe(-1);
   });
 
   it('cuando la API falla, vm$ expone error y data vacía', async () => {
-    // 1) forzamos error en la API
     api.preparacion.and.returnValue(throwError(() => new Error('falló')));
-    api.preparacion.calls.reset();
 
-    // 2) recreamos el componente para que cualquier suscripción previa no afecte
-    component = TestBed.createComponent(PreparacionPage).componentInstance;
-
-    // 3) el tipo VM debe incluir count (lo emite vm$)
-    type VM = { loading: boolean; error: any; data: Orden[]; q: any; count: number };
-
-    // 4) tomamos las dos emisiones: loading y luego error
+    type VM = { loading: boolean; error: any; data: Orden[]; count: number };
     const emissions = await firstValueFrom(component.vm$.pipe(take(2), toArray()));
-    const [loading, errorVm] = emissions as [VM, VM];
+    const loading = emissions[0] as VM;
+    const errorVm = emissions[1] as VM;
 
-    expect(api.preparacion).toHaveBeenCalledTimes(1);
     expect(loading.loading).toBeTrue();
-
     expect(errorVm.loading).toBeFalse();
-    expect(errorVm.error).toBeTruthy();   // <-- ahora no será null
-    expect(errorVm.data.length).toBe(0);  // <-- ahora será 0
+    expect(errorVm.error).toBeTruthy();
+    expect(errorVm.data.length).toBe(0);
   });
 
-
-
-  it('onFilters aplica estado y resetea page=1', () => {
-    component.onFilters({ estado: 'COM' });
+  it('onFilters aplica estado (trim) y resetea page=1 preservando ordering (sin merge)', () => {
+    component.onFilters({ estado: '  COM  ' });
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: { estado: 'COM', page: 1 },
+        queryParams: { estado: 'COM', page: 1, ordering: '-fecha_despacho' },
       })
     );
   });
 
-  it('onCleared limpia estado y page=1', () => {
+  it('onCleared limpia filtros y deja page=1 + ordering (sin merge)', () => {
     component.onCleared();
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: { estado: null, page: 1 },
+        queryParams: { page: 1, ordering: '-fecha_despacho' },
       })
     );
   });
 
-  it('onPage navega a page (index + 1) manteniendo query', () => {
-    const q = { estado: 'PEN', page: 2, ordering: '-fecha_despacho' };
+  it('onPage navega a page (index + 1) manteniendo filtros actuales y ordering', () => {
+    const q = { estado: 'PEN' as const };
     component.onPage({ pageIndex: 4, pageSize: 5, length: 25 } as any, q); // → page 5
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
         queryParams: { estado: 'PEN', page: 5, ordering: '-fecha_despacho' },
       })
     );
@@ -217,20 +204,14 @@ describe('PreparacionPage (standalone, zoneless)', () => {
       chofer: null,
       lineas: [],
     };
-    const com: Orden = {
-      ...pen,
-      id: 'o-2',
-      estado_preparacion: 'COM',
-      estado_preparacion_label: 'Completa',
-    };
+    const com: Orden = { ...pen, id: 'o-2', estado_preparacion: 'COM', estado_preparacion_label: 'Completa' };
 
-    const col = component.columns.find((c) => c.header === 'Estado')!;
-    const evalClass = (v: any, r: Orden) =>
-      typeof v === 'function' ? v(r) : v ?? '';
+    const col = component.columns.find(c => c.header === 'Estado')!;
+    const classOf = (v: any, r: Orden) => (typeof v === 'function' ? v(r) : (v ?? ''));
 
     expect(col.template!(pen)).toBe('Pendiente');
     expect(col.template!(com)).toBe('Completa');
-    expect(evalClass(col.bodyClass, pen)).toContain('text-red-600');
-    expect(evalClass(col.bodyClass, com)).toContain('text-green-600');
+    expect(classOf(col.bodyClass, pen)).toContain('text-red-600');
+    expect(classOf(col.bodyClass, com)).toContain('text-green-600');
   });
 });

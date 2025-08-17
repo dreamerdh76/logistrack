@@ -2,7 +2,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 import { ActivatedRoute, Router, convertToParamMap, NavigationExtras } from '@angular/router';
-import { BehaviorSubject, firstValueFrom, of, take, toArray, throwError } from 'rxjs';
+import { BehaviorSubject, of, throwError, firstValueFrom, pairwise, take } from 'rxjs';
 
 import { RecepcionPage } from './recepcion.page';
 import { ReadApi } from '../read-api.service';
@@ -23,10 +23,7 @@ const classToString = (v: ClassVal): string => {
   if (!v) return '';
   if (Array.isArray(v)) return v.map(classToString as any).join(' ');
   if (typeof v === 'object') {
-    return Object.entries(v)
-      .filter(([, on]) => !!on)
-      .map(([k]) => k)
-      .join(' ');
+    return Object.entries(v).filter(([, on]) => !!on).map(([k]) => k).join(' ');
   }
   return String(v);
 };
@@ -54,7 +51,6 @@ describe('RecepcionPage (standalone, zoneless)', () => {
   let routeStub: any;
 
   beforeEach(async () => {
-    // incidencias ausente => null en la página
     q$ = new BehaviorSubject(convertToParamMap({
       page: '1',
       cd: '',
@@ -83,29 +79,39 @@ describe('RecepcionPage (standalone, zoneless)', () => {
     expect(component).toBeTruthy();
   });
 
-  it('vm$ emite loading y luego datos', async () => {
-    type VM = { q: any; data: Recepcion[]; count: number; loading: boolean; error: any };
+  it('vm$ emite loading y luego datos; la API recibe page, page_size y ordering (sin filtros vacíos); ordering queda en VM', async () => {
+    type VM = { q:any; data:Recepcion[]; count:number; loading:boolean; error:any; page:number; ordering:string };
 
     const [loading, ready] = await firstValueFrom(
-      component.vm$.pipe(take(2), toArray())
+      component.vm$.pipe(pairwise(), take(1))
     ) as [VM, VM];
 
-    expect(api.recepcion).toHaveBeenCalledWith({ cd: undefined, incidencias: undefined, page: 1 });
+    // API: ahora envía page, page_size y ordering
+    expect(api.recepcion).toHaveBeenCalled();
+    const args = api.recepcion.calls.mostRecent().args[0] as any;
+    expect(args.page).toBe(1);
+    expect(args.page_size).toBe(component.ROWS);
+    expect(args.ordering).toBe('-fecha_recepcion');
+    // filtros vacíos no viajan
+    expect('cd' in args).toBeFalse();
+    expect('incidencias' in args).toBeFalse();
+
     expect(loading.loading).toBeTrue();
     expect(ready.loading).toBeFalse();
     expect(ready.count).toBe(2);
-    expect(ready.q.ordering).toBe('-fecha_recepcion');
+    expect(ready.page).toBe(1);
+    // ordering está al tope de la VM (no dentro de q)
+    expect(ready.ordering).toBe('-fecha_recepcion');
   });
 
   it('cuando la API falla, vm$ expone error y data vacía', async () => {
     api.recepcion.and.returnValue(throwError(() => new Error('falló')));
 
-    type VM = { loading: boolean; error: any; data: Recepcion[]; q: any };
+    type VM = { loading:boolean; error:any; data:Recepcion[]; count:number };
 
-    // ⬇️ Evita el cast a tupla directo
-    const emissions = await firstValueFrom(component.vm$.pipe(take(2), toArray()));
-    const loading  = emissions[0] as VM;
-    const errorVm  = emissions[1] as VM;
+    const [loading, errorVm] = await firstValueFrom(
+      component.vm$.pipe(pairwise(), take(1))
+    ) as [VM, VM];
 
     expect(loading.loading).toBeTrue();
     expect(errorVm.loading).toBeFalse();
@@ -113,33 +119,32 @@ describe('RecepcionPage (standalone, zoneless)', () => {
     expect(errorVm.data.length).toBe(0);
   });
 
-  it('onFilters aplica cd/incidencias y resetea page=1', () => {
+  it('onFilters aplica cd/incidencias, resetea page=1 y conserva ordering (sin merge)', () => {
     component.onFilters({ cd: 'CD9', incidencias: true });
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: { cd: 'CD9', incidencias: true, page: 1 },
+        // sin queryParamsHandling
+        queryParams: { cd: 'CD9', incidencias: true, page: 1, ordering: '-fecha_recepcion' },
       })
     );
   });
 
-  it('onCleared limpia filtros y page=1', () => {
+  it('onCleared limpia filtros y deja page=1 conservando ordering (sin merge)', () => {
     component.onCleared();
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
-        queryParams: { cd: null, incidencias: null, page: 1 },
+        queryParams: { page: 1, ordering: '-fecha_recepcion' },
       })
     );
   });
 
-  it('onPage navega a page (index + 1) manteniendo query', () => {
+  it('onPage navega a page (index + 1) manteniendo query (sin merge)', () => {
     const q = { cd: 'CD1', incidencias: false, page: 1, ordering: '-fecha_recepcion' };
     component.onPage({ pageIndex: 3, pageSize: 5, length: 20 } as any, q); // -> page 4
 
@@ -147,7 +152,6 @@ describe('RecepcionPage (standalone, zoneless)', () => {
       [],
       jasmine.objectContaining<NavigationExtras>({
         relativeTo: routeStub,
-        queryParamsHandling: 'merge',
         queryParams: { cd: 'CD1', incidencias: false, page: 4, ordering: '-fecha_recepcion' },
       })
     );
@@ -171,19 +175,16 @@ describe('RecepcionPage (standalone, zoneless)', () => {
     const incCol = component.columns.find(c => c.header === 'Incidencias')!;
     const cdCol  = component.columns.find(c => c.header === 'Centro Distribucion')!;
 
-    // cell
     expect(incCol.cell!(sinInc)).toBe('Sin incidencias');
     expect(incCol.cell!(conInc)).toBe('Con incidencias');
 
-    // bodyClass puede ser función o valor
     const redRaw   = typeof incCol.bodyClass === 'function' ? incCol.bodyClass(conInc) : incCol.bodyClass;
     const greenRaw = typeof incCol.bodyClass === 'function' ? incCol.bodyClass(sinInc) : incCol.bodyClass;
 
     expect(classToString(redRaw as any)).toContain('text-red-600');
     expect(classToString(greenRaw as any)).toContain('text-green-600');
 
-    // cd cell
     expect(cdCol.cell!(sinInc)).toBe('CD Norte');
-    expect(cdCol.cell!(conInc)).toBe('—'); // cuando no hay CD
+    expect(cdCol.cell!(conInc)).toBe('—');
   });
 });

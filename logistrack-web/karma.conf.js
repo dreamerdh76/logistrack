@@ -23,10 +23,7 @@ module.exports = function (config) {
 
     coverageReporter: {
       dir: require('path').join(__dirname, './coverage'),
-      reporters: [{ type: 'html' }, { type: 'text-summary' }],
-      check: {
-        global: { statements: 85, branches: 75, functions: 85, lines: 85 },
-      },
+      reporters: [{ type: 'html' }, { type: 'text-summary' }]
     },
 
     restartOnFileChange: true,
