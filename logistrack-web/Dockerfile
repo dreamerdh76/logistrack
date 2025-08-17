@@ -20,7 +20,7 @@ RUN apk add --no-cache \
 
 # Dependencias
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Código
 COPY . .

@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   # --- Backend Django (ms_distribucion) ---
-  ms_distribucion:
+  ms-distribucion:
     build:
       context: ./ms_distribucion
       target: runtime
@@ -62,11 +62,12 @@ services:
     command:
       [
         "sh","-lc",
-        "python manage.py migrate --noinput \
-        && if [ \"${RUN_FACTORY:-false}\" = \"true\" ]; then \
-              python manage.py shell -c 'from distribucion.factory import run; run()'; \
-            fi \
-        && gunicorn ms_distribucion.wsgi:application -b 0.0.0.0:8000 -w 3 --timeout 120"
+        "set -euo pipefail; \
+        python manage.py migrate --noinput; \
+        echo '>> Ejecutando factory'; \
+        python manage.py shell -c 'from distribucion.factory import run; run()'; \
+        echo '>> Factory OK'; \
+        exec gunicorn ms_distribucion.wsgi:application -b 0.0.0.0:8000 -w 3 --timeout 120"
       ]
 
   ms_distribucion_worker:
@@ -94,8 +95,6 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      ms_distribucion_init:
-        condition: service_completed_successfully
     volumes:
       - ./ms_distribucion:/app
       - ./logistrack-contracts/schemas:/contracts/schemas:ro
@@ -118,7 +117,7 @@ services:
       - ./logistrack-web:/app
       - /app/node_modules
     depends_on:
-      - ms_distribucion
+      - ms-distribucion
     restart: unless-stopped
 
   symfony_cli:
@@ -145,8 +144,10 @@ services:
         condition: service_healthy 
     volumes:
       - ./symfony-backend:/app
+      - symfony_vendor:/app/vendor
     command: ["sleep","infinity"]   
     restart: unless-stopped
 
 volumes:
   mysql_data:
+  symfony_vendor:
